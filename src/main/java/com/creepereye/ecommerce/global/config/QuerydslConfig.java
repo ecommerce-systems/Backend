@@ -1,4 +1,4 @@
-package com.creepereye.ecommerce.config;
+package com.creepereye.ecommerce.global.config;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
