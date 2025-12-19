@@ -3,8 +3,8 @@ package com.creepereye.ecommerce.domain.auth.service;
 
 import com.creepereye.ecommerce.domain.auth.dto.LoginRequest;
 import com.creepereye.ecommerce.domain.auth.dto.TokenResponse;
-import com.creepereye.ecommerce.domain.user.entity.User;
-import com.creepereye.ecommerce.domain.user.repository.UserRepository;
+import com.creepereye.ecommerce.domain.auth.entity.Auth;
+import com.creepereye.ecommerce.domain.auth.repository.AuthRepository;
 import com.creepereye.ecommerce.global.security.provider.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class AuthService implements UserDetailsService {
 
-    private final UserRepository userRepository;
+    private final AuthRepository authRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final RedisService redisService;
@@ -95,13 +95,13 @@ public class AuthService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
+        Auth auth = authRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
         return org.springframework.security.core.userdetails.User.builder()
-                .username(user.getUsername())
-                .password(user.getPassword())
-                .roles(user.getRoles().toArray(new String[0]))
+                .username(auth.getUsername())
+                .password(auth.getPassword())
+                .roles(auth.getRoles().toArray(new String[0]))
                 .build();
     }
 }

@@ -1,11 +1,10 @@
 package com.creepereye.ecommerce.domain.auth.controller;
 
-
-
-
 import com.creepereye.ecommerce.domain.auth.dto.LoginRequest;
+import com.creepereye.ecommerce.domain.auth.dto.SignUpRequest;
 import com.creepereye.ecommerce.domain.auth.dto.TokenResponse;
 import com.creepereye.ecommerce.domain.auth.service.AuthService;
+import com.creepereye.ecommerce.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -14,13 +13,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/auth/")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
+    private final UserService userService;
+
     @Value("${jwt.refresh-token-validity-in-seconds}")
     private long refreshTokenValidityInSeconds;
+
+    @PostMapping("/signup")
+    public ResponseEntity<Void> signup(@RequestBody SignUpRequest signUpRequest) {
+        userService.signUp(signUpRequest);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@RequestBody LoginRequest request) {
 
@@ -30,7 +38,7 @@ public class AuthController {
                 .httpOnly(true)
                 .secure(true)
                 .sameSite("Lax")
-                .path("/auth/refresh")
+                .path("/api/v1/auth/refresh")
                 .maxAge(refreshTokenValidityInSeconds)
                 .build();
 

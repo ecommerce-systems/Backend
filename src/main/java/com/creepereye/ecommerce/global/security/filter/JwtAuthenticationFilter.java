@@ -38,7 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         logger.debug("Resolved token: {}", token);
 
                 if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
-            // Redis에 해당 accessToken logout 여부 확인
+
             if (redisService.getValues(token) == null) {
                 Authentication authentication = jwtTokenProvider.getAuthentication(token);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
