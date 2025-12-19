@@ -38,7 +38,7 @@ class AuthControllerSignupTest {
 
         doNothing().when(userService).signUp(any(SignUpRequest.class));
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/auth/signup")
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(signUpRequest)))
                 .andExpect(status().isOk());
