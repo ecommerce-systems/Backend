@@ -43,5 +43,25 @@ services:
       - ./k6:/scripts
     entrypoint: k6 run /scripts/test.js --out junit=/scripts/result.xml
 
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/ecommerce
+      DB_USERNAME: user
+      DB_PASSWORD: password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: d3CUfHEIRFv/e3XvZe8XlEQLSZY3hOkb017Cjq13v7E=
+      JWT_ACCESS_TOKEN_VALIDITY: 3600
+      JWT_REFRESH_TOKEN_VALIDITY: 86400
+    depends_on:
+      - postgres
+      - redis
+
+
 volumes:
   postgres_data:
