@@ -76,13 +76,13 @@ public class JwtTokenProvider {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
             return true;
         } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
-            log.warn("Invalid JWT signature.");
+            log.warn("Invalid JWT signature: {}", e.getMessage());
         } catch (ExpiredJwtException e) {
-            log.warn("Expired JWT token.");
+            log.warn("Expired JWT token: {}", e.getMessage());
         } catch (UnsupportedJwtException e) {
-            log.warn("Unsupported JWT token.");
+            log.warn("Unsupported JWT token: {}", e.getMessage());
         } catch (IllegalArgumentException e) {
-            log.warn("JWT token compact of handler are invalid.");
+            log.warn("JWT token compact of handler are invalid: {}", e.getMessage());
         }
         return false;
     }
