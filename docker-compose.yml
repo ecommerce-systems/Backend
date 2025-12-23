@@ -36,10 +36,11 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=password
     volumes:
       - ./grafana/provisioning/:/etc/grafana/provisioning/
-
+      - ./grafana/dashboards/:/etc/grafana/dashboards/
 
   backend:
     build: .
+    image: ecommerce-backend:latest
     ports:
       - "8080:8080"
     environment:
@@ -51,6 +52,8 @@ services:
       JWT_SECRET: d3CUfHEIRFv/e3XvZe8XlEQLSZY3hOkb017Cjq13v7E=
       JWT_ACCESS_TOKEN_VALIDITY: 3600
       JWT_REFRESH_TOKEN_VALIDITY: 86400
+      SPRING_APPLICATION_NAME: backend
+
     depends_on:
       - postgres
       - redis
