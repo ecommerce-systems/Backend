@@ -27,8 +27,9 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build the Docker image
-        run: docker build -t creepereye/ecommerce-backend:latest .
-
-      - name: Push to Dockerhub
-        run: docker push creepereye/ecommerce-backend:latest
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: creepereye/ecommerce-backend:latest
