@@ -20,7 +20,11 @@ import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.mockito.ArgumentMatchers.any;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+    "jwt.secret=c3VwZXItc2VjcmV0LWtleS1mb3ItdGVzdGluZy1lY29tbWVyY2UtcHJvamVjdC0xMjM0NQ==",
+    "jwt.access-token-validity-in-seconds=3600",
+    "jwt.refresh-token-validity-in-seconds=86400"
+})
 @AutoConfigureMockMvc
 @EnableAutoConfiguration(exclude = {MongoAutoConfiguration.class, MongoDataAutoConfiguration.class})
 @ActiveProfiles("local")
