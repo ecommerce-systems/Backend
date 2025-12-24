@@ -16,7 +16,9 @@ IF %ERRORLEVEL% NEQ 0 (
     GOTO :EOF
 )
 
-echo Running k6 load test...
-k6 run k6/scripts/test.js
+echo Running k6 load tests...
+k6 run k6/scripts/auth-test.js
+k6 run k6/scripts/product-test.js
+k6 run k6/scripts/user-test.js
 
 ENDLOCAL
