@@ -31,7 +31,7 @@ jobs:
         run: |
           DEPLOY_PATH="."
           cd "${DEPLOY_PATH}"
-          docker stack deploy -c docker-swarm.yml --with-registry-auth ecommerce
+          sudo APP_IMAGE_TAG="${APP_IMAGE_TAG}" docker stack deploy -c docker-swarm.yml --with-registry-auth ecommerce
 
       - name: Docker Logout
         run: docker logout
