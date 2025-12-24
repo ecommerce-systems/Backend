@@ -84,6 +84,7 @@ export default function () {
         check(createAttemptRes, { 'user cannot create product': (r) => r.status === 403 });
 
 
+
         const getAllRes = http.get(`${BASE_URL}/products`, { headers: userAuthHeaders });
         check(getAllRes, { 'user can read products': (r) => r.status === 200 });
     }
