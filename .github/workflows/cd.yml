@@ -1,0 +1,41 @@
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types:
+      - completed
+
+jobs:
+  deploy-services:
+    runs-on: self-hosted
+    environment: production
+
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Docker Login
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Get CI Commit SHA
+        id: get_sha
+        run: echo "::set-output name=sha::${{ github.event.workflow_run.head_sha }}"
+
+      - name: Deploy Services to Swarm
+        run: |
+          DEPLOY_PATH="." 
+          
+          cd "${DEPLOY_PATH}"
+
+          APP_IMAGE_TAG="${{ steps.get_sha.outputs.sha }}"
+
+          sudo APP_IMAGE_TAG="${APP_IMAGE_TAG}" docker stack deploy -c docker-swarm.yml --with-registry-auth ecommerce
+
+      - name: Docker Logout
+        run: |
+          sudo docker logout
