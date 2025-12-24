@@ -32,6 +32,8 @@ jobs:
         with:
           context: .
           push: true
-          tags: creepereye/ecommerce-backend:latest
-
-
+          tags: |
+            creepereye/ecommerce-backend:latest          
+            creepereye/ecommerce-backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
