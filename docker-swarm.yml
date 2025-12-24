@@ -64,7 +64,8 @@ services:
       JWT_REFRESH_TOKEN_VALIDITY: 86400
       SPRING_APPLICATION_NAME: backend
 
-
+    networks:
+      - ecommerce
     depends_on:
       - postgres
       - redis
@@ -88,3 +89,8 @@ services:
 
 volumes:
   postgres_data:
+
+
+
+networks:
+  ecommerce:
