@@ -2,6 +2,7 @@ package com.creepereye.ecommerce.domain.auth.service;
 
 
 import com.creepereye.ecommerce.domain.auth.dto.LoginRequest;
+import com.creepereye.ecommerce.domain.auth.dto.PasswordChangeRequest;
 import com.creepereye.ecommerce.domain.auth.dto.TokenResponse;
 import com.creepereye.ecommerce.domain.auth.entity.Auth;
 import com.creepereye.ecommerce.domain.auth.repository.AuthRepository;
@@ -11,10 +12,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,7 @@ public class AuthService implements UserDetailsService {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final RedisService redisService;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public TokenResponse login(LoginRequest request) {
@@ -91,6 +94,27 @@ public class AuthService implements UserDetailsService {
         return tokenResponse;
     }
 
+    @Transactional
+    public void changePassword(PasswordChangeRequest request) {
+        String username = getCurrentUsername();
+        Auth auth = authRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), auth.getPassword())) {
+            throw new IllegalArgumentException("기존 비밀번호가 일치하지 않습니다.");
+        }
+
+        auth.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        authRepository.save(auth);
+    }
+
+    private String getCurrentUsername() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetails) {
+            return ((UserDetails) principal).getUsername();
+        }
+        return principal.toString();
+    }
 
 
     @Override

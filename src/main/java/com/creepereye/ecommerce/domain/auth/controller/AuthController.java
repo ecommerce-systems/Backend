@@ -1,6 +1,7 @@
 package com.creepereye.ecommerce.domain.auth.controller;
 
 import com.creepereye.ecommerce.domain.auth.dto.LoginRequest;
+import com.creepereye.ecommerce.domain.auth.dto.PasswordChangeRequest;
 import com.creepereye.ecommerce.domain.auth.dto.SignUpRequest;
 import com.creepereye.ecommerce.domain.auth.dto.TokenResponse;
 import com.creepereye.ecommerce.domain.auth.service.AuthService;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -26,6 +28,12 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<Void> signup(@RequestBody SignUpRequest signUpRequest) {
         userService.signUp(signUpRequest);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/signup-admin")
+    public ResponseEntity<Void> signupAdmin(@RequestBody SignUpRequest signUpRequest) {
+        userService.signUpAdmin(signUpRequest);
         return ResponseEntity.ok().build();
     }
 
@@ -59,5 +67,19 @@ public class AuthController {
     public ResponseEntity<TokenResponse> refresh(@CookieValue("refreshToken") String refreshToken) {
         TokenResponse tokenResponse = authService.refresh(refreshToken);
         return ResponseEntity.ok(tokenResponse);
+    }
+
+    @PostMapping("/password")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> changePassword(@RequestBody PasswordChangeRequest request) {
+        authService.changePassword(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> deleteAccount() {
+        userService.deleteAccount();
+        return ResponseEntity.ok().build();
     }
 }
