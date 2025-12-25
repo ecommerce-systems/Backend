@@ -24,6 +24,11 @@ public class User {
 
     private String address;
 
+    private Boolean active;
+
+    private String clubMemberStatus;
+
+    private String fashionNewsFrequency;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "auth_id", nullable = false, unique = true)

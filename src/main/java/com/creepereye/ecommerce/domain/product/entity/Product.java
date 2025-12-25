@@ -78,4 +78,7 @@ public class Product {
     @ManyToOne
     @JoinColumn(name = "garment_group_no")
     private GarmentGroup garmentGroup;
+
+    @Column(name = "price")
+    private java.math.BigDecimal price;
 }

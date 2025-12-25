@@ -1,0 +1,119 @@
+@startuml
+!theme vibrant
+title 전자상거래 도메인 엔티티
+
+package "사용자 관리" {
+    class Auth {
+        + Long id
+        + String username
+        + String password
+        + List<String> roles
+    }
+
+    class User {
+        + Long id
+        + String name
+        + String phone
+        + String address
+        + Boolean active
+        + String clubMemberStatus
+        + String fashionNewsFrequency
+    }
+}
+
+package "상품 카탈로그" {
+    class Product {
+        + Integer productId
+        + Integer productCode
+        + String prodName
+        + String detailDesc
+    }
+
+    class ProductType {
+        + Integer productTypeNo
+        + String productTypeName
+    }
+
+    class ProductGroup {
+        + String productGroupName
+    }
+
+    class GraphicalAppearance {
+        + Integer graphicalAppearanceNo
+        + String graphicalAppearanceName
+    }
+
+    class ColourGroup {
+        + Integer colourGroupCode
+        + String colourGroupName
+    }
+
+    class PerceivedColourValue {
+        + Integer perceivedColourValueId
+        + String perceivedColourValueName
+    }
+
+    class PerceivedColourMaster {
+        + Integer perceivedColourMasterId
+        + String perceivedColourMasterName
+    }
+
+    class Department {
+        + Integer departmentNo
+        + String departmentName
+    }
+
+    class Index {
+        + Character indexCode
+        + String indexName
+    }
+
+    class IndexGroup {
+        + Integer indexGroupNo
+        + String indexGroupName
+    }
+
+    class Section {
+        + Integer sectionNo
+        + String sectionName
+    }
+
+    class GarmentGroup {
+        + Integer garmentGroupNo
+        + String garmentGroupName
+    }
+}
+
+' === Relationships ===
+User "1" -- "1" Auth
+
+Product "N" *-- "1" ProductType
+Product "N" *-- "1" ProductGroup
+Product "N" *-- "1" GraphicalAppearance
+Product "N" *-- "1" ColourGroup
+Product "N" *-- "1" PerceivedColourValue
+Product "N" *-- "1" PerceivedColourMaster
+Product "N" *-- "1" Department
+Product "N" *-- "1" Index
+Product "N" *-- "1" IndexGroup
+Product "N" *-- "1" Section
+Product "N" *-- "1" GarmentGroup
+
+package "주문 관리" {
+    class Order {
+        + Long id
+        + LocalDateTime orderDate
+        + String status
+    }
+
+    class OrderDetail {
+        + Long id
+        + Integer quantity
+        + BigDecimal price
+    }
+}
+
+User "1" -- "N" Order
+Order "1" -- "N" OrderDetail
+Product "1" -- "N" OrderDetail
+@enduml

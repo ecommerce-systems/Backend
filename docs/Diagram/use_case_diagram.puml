@@ -1,0 +1,39 @@
+@startuml
+title 전자상거래 유스케이스
+
+actor 고객
+actor 관리자
+
+rectangle "전자상거래 시스템" {
+    usecase "로그인" as UC_LOGIN
+    usecase "상품 조회" as UC_VIEW
+
+    package "고객 행동" {
+        usecase "회원가입" as UC_SIGNUP
+        usecase "비밀번호 변경" as UC_CHANGE_PASS
+        usecase "회원 정보 수정" as UC_UPDATE_INFO
+        usecase "회원 탈퇴" as UC_DELETE
+    }
+
+    package "관리자 행동" {
+        usecase "상품 관리 (CRUD)" as UC_MANAGE_PROD
+    }
+}
+
+고객 -- UC_SIGNUP
+고객 -- UC_LOGIN
+고객 -- UC_VIEW
+고객 -- UC_CHANGE_PASS
+고객 -- UC_UPDATE_INFO
+고객 -- UC_DELETE
+
+관리자 -- UC_LOGIN
+관리자 -- UC_VIEW
+관리자 -- UC_MANAGE_PROD
+
+UC_CHANGE_PASS ..> UC_LOGIN : <<include>>
+UC_UPDATE_INFO ..> UC_LOGIN : <<include>>
+UC_DELETE ..> UC_LOGIN : <<include>>
+UC_MANAGE_PROD ..> UC_LOGIN : <<include>>
+
+@enduml
