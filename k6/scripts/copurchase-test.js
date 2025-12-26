@@ -39,7 +39,7 @@ function createProduct(authHeaders, productName, price) {
 }
 
 export default function () {
-    // 1. Admin setup: sign up, log in, and create products
+
     const adminUsername = `admin_copurchase_${__VU}_${Date.now()}`;
     const adminPassword = 'password';
     const adminName = `Admin Co-Purchase User ${__VU}`;
@@ -75,7 +75,7 @@ export default function () {
         return;
     }
 
-    // 2. User setup: sign up, log in
+
     const userUsername = `user_copurchase_${__VU}_${Date.now()}`;
     const userPassword = 'password';
     const userName = `Co-Purchase Test User ${__VU}`;
@@ -91,22 +91,19 @@ export default function () {
         const userAccessToken = userLoginRes.json('accessToken');
         const userAuthHeaders = { 'Authorization': `Bearer ${userAccessToken}`, 'Content-Type': 'application/json' };
 
-        // 3. User creates orders to establish co-purchase patterns
-        // Order 1: Product 1 and Product 2
+
         const order1Payload = { items: [{ productId: product1Id, quantity: 1 }, { productId: product2Id, quantity: 1 }] };
         const createOrder1Res = http.post(`${BASE_URL}/orders`, JSON.stringify(order1Payload), { headers: userAuthHeaders });
         check(createOrder1Res, { 'user created order with P1 and P2': (r) => r.status === 200 });
         sleep(1);
 
-        // Order 2: Product 1 and Product 3
+
         const order2Payload = { items: [{ productId: product1Id, quantity: 1 }, { productId: product3Id, quantity: 1 }] };
         const createOrder2Res = http.post(`${BASE_URL}/orders`, JSON.stringify(order2Payload), { headers: userAuthHeaders });
         check(createOrder2Res, { 'user created order with P1 and P3': (r) => r.status === 200 });
         sleep(1);
 
-        // 4. Get co-purchase recommendations
-        // We are testing the endpoint. The recommendation logic itself depends on a data population job
-        // that may not run during this test. So we check for a valid response shape.
+
         const recommendationsRes = http.get(`${BASE_URL}/co-purchase/${product1Id}`, { headers: userAuthHeaders });
         check(recommendationsRes, {
             'get recommendations returns 200': (r) => r.status === 200,

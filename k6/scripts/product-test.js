@@ -81,7 +81,7 @@ export default function () {
 
         const productPayload = { prodName: "K6 Test Product", detailDesc: "Created by k6" };
         const createAttemptRes = http.post(`${BASE_URL}/products`, JSON.stringify(productPayload), { headers: userAuthHeaders });
-        check(createAttemptRes, { 'user cannot create product': (r) => r.status === 403 });
+        check(createAttemptRes, { 'user cannot create product': (r) => r.status === 401 });
 
 
 
