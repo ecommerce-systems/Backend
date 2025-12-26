@@ -87,6 +87,12 @@ export default function () {
 
         const getAllRes = http.get(`${BASE_URL}/products`, { headers: userAuthHeaders });
         check(getAllRes, { 'user can read products': (r) => r.status === 200 });
+
+        const searchRes = http.get(`${BASE_URL}/products/search?keyword=Test`, { headers: userAuthHeaders });
+        check(searchRes, {
+            'user can search for products': (r) => r.status === 200,
+            'search results are an array': (r) => r.json() && Array.isArray(r.json()),
+        });
     }
     sleep(1);
 }

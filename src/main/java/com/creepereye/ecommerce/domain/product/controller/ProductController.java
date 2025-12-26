@@ -32,6 +32,12 @@ public class ProductController {
         return product.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/search")
+    @PreAuthorize("isAuthenticated()")
+    public List<Product> searchProducts(@RequestParam("keyword") String keyword) {
+        return productService.search(keyword);
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Product> createProduct(@RequestBody Product product) {

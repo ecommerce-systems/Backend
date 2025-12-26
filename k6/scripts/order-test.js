@@ -40,7 +40,7 @@ function createProduct(authHeaders, productName, price) {
 
 
 export default function () {
-    // 1. Admin setup: Create a product to be ordered
+
     const adminUsername = `admin_order_test_${__VU}_${Date.now()}`;
     const adminPassword = 'password';
     const adminName = `Admin Order User ${__VU}`;
@@ -73,7 +73,7 @@ export default function () {
         return;
     }
 
-    // 2. User scenario: Create and manage orders
+
     const userUsername = `user_order_test_${__VU}_${Date.now()}`;
     const userPassword = 'password';
     const userName = `Order Test User ${__VU}`;
@@ -89,7 +89,7 @@ export default function () {
         const userAccessToken = userLoginRes.json('accessToken');
         const userAuthHeaders = { 'Authorization': `Bearer ${userAccessToken}`, 'Content-Type': 'application/json' };
 
-        // Create an order
+
         const orderPayload = {
             items: [{ productId: productId, quantity: 2 }]
         };
@@ -102,12 +102,12 @@ export default function () {
         sleep(1);
 
         if (orderId) {
-            // Get user's orders
+
             const getMyOrdersRes = http.get(`${BASE_URL}/orders`, { headers: userAuthHeaders });
             check(getMyOrdersRes, { 'user can get their orders': (r) => r.status === 200 });
             sleep(1);
 
-            // Get specific order by ID
+
             const getOrderByIdRes = http.get(`${BASE_URL}/orders/${orderId}`, { headers: userAuthHeaders });
             check(getOrderByIdRes, { 'user can get order by ID': (r) => r.status === 200 });
         }
