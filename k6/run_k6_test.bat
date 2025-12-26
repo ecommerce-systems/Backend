@@ -20,5 +20,6 @@ echo Running k6 load tests...
 k6 run k6/scripts/auth-test.js
 k6 run k6/scripts/product-test.js
 k6 run k6/scripts/user-test.js
+k6 run k6/scripts/copurchase-test.js
 
 ENDLOCAL
