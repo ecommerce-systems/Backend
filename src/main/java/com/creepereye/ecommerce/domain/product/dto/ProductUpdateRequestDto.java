@@ -10,7 +10,6 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor
 public class ProductUpdateRequestDto {
-    private Integer productId;
     private Integer productCode;
     private String prodName;
     private String productTypeName;

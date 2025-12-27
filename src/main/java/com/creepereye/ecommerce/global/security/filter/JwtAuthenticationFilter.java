@@ -16,6 +16,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Enumeration; // Add this import
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -32,6 +33,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
+
+        Enumeration<String> headerNames = request.getHeaderNames();
+        while(headerNames.hasMoreElements()){
+            String headerName = headerNames.nextElement();
+            logger.debug("Headers 📋 {}: {}", headerName, request.getHeader(headerName));
+        }
 
         String token = resolveToken(request);
         logger.debug("➡️ Authorization header: {}", request.getHeader("Authorization"));

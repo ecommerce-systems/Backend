@@ -42,12 +42,13 @@ export default function () {
     const adminLoginRes = login(adminUsername, adminPassword);
     check(adminLoginRes, { 'admin login successful': (r) => r.status === 200 });
 
-    if (adminLoginRes.status === 200) {
-        const adminAccessToken = adminLoginRes.json('accessToken');
-        const authHeaders = { 'Authorization': `Bearer ${adminAccessToken}`, 'Content-Type': 'application/json' };
-
-        const productPayload = {
-            productCode: 12345,
+            if (adminLoginRes.status === 200) {
+                const adminAccessToken = adminLoginRes.json('accessToken');
+                const authHeaders = { 'Authorization': `Bearer ${adminAccessToken}`, 'Content-Type': 'application/json' };
+                console.log(`Admin Access Token: ${adminAccessToken}`);
+                console.log(`Auth Headers for Product Create/Update: ${JSON.stringify(authHeaders)}`);
+    
+                const productPayload = {            productCode: 12345,
             prodName: "K6 Test Product",
             productTypeName: "Test Type",
             productGroupName: "Test Group",
