@@ -1,6 +1,9 @@
 package com.creepereye.ecommerce.domain.product.service;
 
 
+import com.creepereye.ecommerce.domain.product.dto.ProductCreateRequestDto;
+import com.creepereye.ecommerce.domain.product.dto.ProductSearchResponseDto;
+import com.creepereye.ecommerce.domain.product.dto.ProductUpdateRequestDto;
 import com.creepereye.ecommerce.domain.product.entity.*;
 import com.creepereye.ecommerce.domain.product.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -39,6 +43,54 @@ public class ProductService {
     }
 
     @Transactional
+    public Product createProduct(ProductCreateRequestDto dto) {
+        Product product = Product.builder()
+                .productCode(dto.getProductCode())
+                .prodName(dto.getProdName())
+                .detailDesc(dto.getDetailDesc())
+                .price(dto.getPrice())
+                .productType(new ProductType(null, dto.getProductTypeName()))
+                .productGroup(new ProductGroup(null, dto.getProductGroupName()))
+                .graphicalAppearance(new GraphicalAppearance(null, dto.getGraphicalAppearanceName()))
+                .colourGroup(new ColourGroup(null, dto.getColourGroupName()))
+                .perceivedColourValue(new PerceivedColourValue(null, dto.getPerceivedColourValueName()))
+                .perceivedColourMaster(new PerceivedColourMaster(null, dto.getPerceivedColourMasterName()))
+                .department(new Department(null, dto.getDepartmentName()))
+                .index(new Index(null, dto.getIndexName()))
+                .indexGroup(new IndexGroup(null, dto.getIndexGroupName()))
+                .section(new Section(null, dto.getSectionName()))
+                .garmentGroup(new GarmentGroup(null, dto.getGarmentGroupName()))
+                .build();
+
+        return save(product);
+    }
+
+    @Transactional
+    public Product updateProduct(Integer id, ProductUpdateRequestDto dto) {
+        Product existingProduct = productRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Product not found with id: " + id));
+
+        existingProduct.setProductCode(dto.getProductCode());
+        existingProduct.setProdName(dto.getProdName());
+        existingProduct.setDetailDesc(dto.getDetailDesc());
+        existingProduct.setPrice(dto.getPrice());
+
+        existingProduct.setProductType(resolveProductType(new ProductType(null, dto.getProductTypeName())));
+        existingProduct.setProductGroup(resolveProductGroup(new ProductGroup(null, dto.getProductGroupName())));
+        existingProduct.setGraphicalAppearance(resolveGraphicalAppearance(new GraphicalAppearance(null, dto.getGraphicalAppearanceName())));
+        existingProduct.setColourGroup(resolveColourGroup(new ColourGroup(null, dto.getColourGroupName())));
+        existingProduct.setPerceivedColourValue(resolvePerceivedColourValue(new PerceivedColourValue(null, dto.getPerceivedColourValueName())));
+        existingProduct.setPerceivedColourMaster(resolvePerceivedColourMaster(new PerceivedColourMaster(null, dto.getPerceivedColourMasterName())));
+        existingProduct.setDepartment(resolveDepartment(new Department(null, dto.getDepartmentName())));
+        existingProduct.setIndex(resolveIndex(new Index(null, dto.getIndexName())));
+        existingProduct.setIndexGroup(resolveIndexGroup(new IndexGroup(null, dto.getIndexGroupName())));
+        existingProduct.setSection(resolveSection(new Section(null, dto.getSectionName())));
+        existingProduct.setGarmentGroup(resolveGarmentGroup(new GarmentGroup(null, dto.getGarmentGroupName())));
+
+        return productRepository.save(existingProduct);
+    }
+
+    @Transactional
     public Product save(Product product) {
         product.setProductType(resolveProductType(product.getProductType()));
         product.setProductGroup(resolveProductGroup(product.getProductGroup()));
@@ -55,132 +107,164 @@ public class ProductService {
         return productRepository.save(product);
     }
 
-    private ProductType resolveProductType(ProductType entity) {
-        if (entity == null) return null;
-        if (entity.getProductTypeNo() != null) return entity;
-        if (entity.getProductTypeName() == null) return null;
+    private ProductType resolveProductType(ProductType incomingEntity) {
+        if (incomingEntity == null || incomingEntity.getProductTypeName() == null) return null;
 
-        return productTypeRepository.findByProductTypeName(entity.getProductTypeName())
+        return productTypeRepository.findByProductTypeName(incomingEntity.getProductTypeName())
                 .orElseGet(() -> {
-                    Integer maxId = productTypeRepository.findMaxProductTypeNo().orElse(0);
-                    entity.setProductTypeNo(maxId + 1);
-                    return productTypeRepository.save(entity);
+                    // Not found by name, create a new one
+                    Integer newProductTypeNo = incomingEntity.getProductTypeNo();
+                    if (newProductTypeNo == null) {
+                        newProductTypeNo = productTypeRepository.findMaxProductTypeNo().orElse(0) + 1;
+                    }
+                    incomingEntity.setProductTypeNo(newProductTypeNo);
+                    return productTypeRepository.save(incomingEntity);
                 });
     }
 
     private ProductGroup resolveProductGroup(ProductGroup entity) {
         if (entity == null || entity.getProductGroupName() == null) return null;
-        return productGroupRepository.findById(entity.getProductGroupName())
-                .orElseGet(() -> productGroupRepository.save(entity));
-    }
 
-    private GraphicalAppearance resolveGraphicalAppearance(GraphicalAppearance entity) {
-        if (entity == null) return null;
-        if (entity.getGraphicalAppearanceNo() != null) return entity;
-        if (entity.getGraphicalAppearanceName() == null) return null;
-
-        return graphicalAppearanceRepository.findByGraphicalAppearanceName(entity.getGraphicalAppearanceName())
+        return productGroupRepository.findByProductGroupName(entity.getProductGroupName())
                 .orElseGet(() -> {
-                    Integer maxId = graphicalAppearanceRepository.findMaxGraphicalAppearanceNo().orElse(0);
-                    entity.setGraphicalAppearanceNo(maxId + 1);
-                    return graphicalAppearanceRepository.save(entity);
+                    int newCodeInt = productGroupRepository.findMaxProductGroupCodeAsInt().orElse(0) + 1;
+                    char newCode = (char) ('A' + newCodeInt - 1);
+                    entity.setProductGroupCode(newCode);
+                    return productGroupRepository.save(entity);
                 });
     }
 
-    private ColourGroup resolveColourGroup(ColourGroup entity) {
-        if (entity == null) return null;
-        if (entity.getColourGroupCode() != null) return entity;
-        if (entity.getColourGroupName() == null) return null;
+    private GraphicalAppearance resolveGraphicalAppearance(GraphicalAppearance incomingEntity) {
+        if (incomingEntity == null || incomingEntity.getGraphicalAppearanceName() == null) return null;
 
-        return colourGroupRepository.findByColourGroupName(entity.getColourGroupName())
+        return graphicalAppearanceRepository.findByGraphicalAppearanceName(incomingEntity.getGraphicalAppearanceName())
                 .orElseGet(() -> {
-                    Integer maxId = colourGroupRepository.findMaxColourGroupCode().orElse(0);
-                    entity.setColourGroupCode(maxId + 1);
-                    return colourGroupRepository.save(entity);
+                    // Not found by name, create a new one
+                    Integer newGraphicalAppearanceNo = incomingEntity.getGraphicalAppearanceNo();
+                    if (newGraphicalAppearanceNo == null) {
+                        newGraphicalAppearanceNo = graphicalAppearanceRepository.findMaxGraphicalAppearanceNo().orElse(0) + 1;
+                    }
+                    incomingEntity.setGraphicalAppearanceNo(newGraphicalAppearanceNo);
+                    return graphicalAppearanceRepository.save(incomingEntity);
                 });
     }
 
-    private PerceivedColourValue resolvePerceivedColourValue(PerceivedColourValue entity) {
-        if (entity == null) return null;
-        if (entity.getPerceivedColourValueId() != null) return entity;
-        if (entity.getPerceivedColourValueName() == null) return null;
+    private ColourGroup resolveColourGroup(ColourGroup incomingEntity) {
+        if (incomingEntity == null || incomingEntity.getColourGroupName() == null) return null;
 
-        return perceivedColourValueRepository.findByPerceivedColourValueName(entity.getPerceivedColourValueName())
+        return colourGroupRepository.findByColourGroupName(incomingEntity.getColourGroupName())
                 .orElseGet(() -> {
-                    Integer maxId = perceivedColourValueRepository.findMaxPerceivedColourValueId().orElse(0);
-                    entity.setPerceivedColourValueId(maxId + 1);
-                    return perceivedColourValueRepository.save(entity);
+                    // Not found by name, create a new one
+                    Integer newColourGroupCode = incomingEntity.getColourGroupCode();
+                    if (newColourGroupCode == null) {
+                        newColourGroupCode = colourGroupRepository.findMaxColourGroupCode().orElse(0) + 1;
+                    }
+                    incomingEntity.setColourGroupCode(newColourGroupCode);
+                    return colourGroupRepository.save(incomingEntity);
                 });
     }
 
-    private PerceivedColourMaster resolvePerceivedColourMaster(PerceivedColourMaster entity) {
-        if (entity == null) return null;
-        if (entity.getPerceivedColourMasterId() != null) return entity;
-        if (entity.getPerceivedColourMasterName() == null) return null;
+    private PerceivedColourValue resolvePerceivedColourValue(PerceivedColourValue incomingEntity) {
+        if (incomingEntity == null || incomingEntity.getPerceivedColourValueName() == null) return null;
 
-        return perceivedColourMasterRepository.findByPerceivedColourMasterName(entity.getPerceivedColourMasterName())
+        return perceivedColourValueRepository.findByPerceivedColourValueName(incomingEntity.getPerceivedColourValueName())
                 .orElseGet(() -> {
-                    Integer maxId = perceivedColourMasterRepository.findMaxPerceivedColourMasterId().orElse(0);
-                    entity.setPerceivedColourMasterId(maxId + 1);
-                    return perceivedColourMasterRepository.save(entity);
+                    // Not found by name, create a new one
+                    Integer newPerceivedColourValueId = incomingEntity.getPerceivedColourValueId();
+                    if (newPerceivedColourValueId == null) {
+                        newPerceivedColourValueId = perceivedColourValueRepository.findMaxPerceivedColourValueId().orElse(0) + 1;
+                    }
+                    incomingEntity.setPerceivedColourValueId(newPerceivedColourValueId);
+                    return perceivedColourValueRepository.save(incomingEntity);
                 });
     }
 
-    private Department resolveDepartment(Department entity) {
-        if (entity == null) return null;
-        if (entity.getDepartmentNo() != null) return entity;
-        if (entity.getDepartmentName() == null) return null;
+    private PerceivedColourMaster resolvePerceivedColourMaster(PerceivedColourMaster incomingEntity) {
+        if (incomingEntity == null || incomingEntity.getPerceivedColourMasterName() == null) return null;
 
-        return departmentRepository.findByDepartmentName(entity.getDepartmentName())
+        return perceivedColourMasterRepository.findByPerceivedColourMasterName(incomingEntity.getPerceivedColourMasterName())
                 .orElseGet(() -> {
-                    Integer maxId = departmentRepository.findMaxDepartmentNo().orElse(0);
-                    entity.setDepartmentNo(maxId + 1);
-                    return departmentRepository.save(entity);
+                    // Not found by name, create a new one
+                    Integer newPerceivedColourMasterId = incomingEntity.getPerceivedColourMasterId();
+                    if (newPerceivedColourMasterId == null) {
+                        newPerceivedColourMasterId = perceivedColourMasterRepository.findMaxPerceivedColourMasterId().orElse(0) + 1;
+                    }
+                    incomingEntity.setPerceivedColourMasterId(newPerceivedColourMasterId);
+                    return perceivedColourMasterRepository.save(incomingEntity);
                 });
     }
 
-    private Index resolveIndex(Index entity) {
-        // ID is Character, assuming no auto-creation for this one.
-        if (entity == null || entity.getIndexCode() == null) return null;
-        return indexRepository.findById(String.valueOf(entity.getIndexCode())).orElse(null);
-    }
+    private Department resolveDepartment(Department incomingEntity) {
+        if (incomingEntity == null || incomingEntity.getDepartmentName() == null) return null;
 
-    private IndexGroup resolveIndexGroup(IndexGroup entity) {
-        if (entity == null) return null;
-        if (entity.getIndexGroupNo() != null) return entity;
-        if (entity.getIndexGroupName() == null) return null;
-
-        return indexGroupRepository.findByIndexGroupName(entity.getIndexGroupName())
+        return departmentRepository.findByDepartmentName(incomingEntity.getDepartmentName())
                 .orElseGet(() -> {
-                    Integer maxId = indexGroupRepository.findMaxIndexGroupNo().orElse(0);
-                    entity.setIndexGroupNo(maxId + 1);
-                    return indexGroupRepository.save(entity);
+                    // Not found by name, create a new one
+                    Integer newDepartmentNo = incomingEntity.getDepartmentNo();
+                    if (newDepartmentNo == null) {
+                        newDepartmentNo = departmentRepository.findMaxDepartmentNo().orElse(0) + 1;
+                    }
+                    incomingEntity.setDepartmentNo(newDepartmentNo);
+                    return departmentRepository.save(incomingEntity);
                 });
     }
 
-    private Section resolveSection(Section entity) {
-        if (entity == null) return null;
-        if (entity.getSectionNo() != null) return entity;
-        if (entity.getSectionName() == null) return null;
+    private Index resolveIndex(Index incomingEntity) {
+        if (incomingEntity == null || incomingEntity.getIndexName() == null) return null;
 
-        return sectionRepository.findBySectionName(entity.getSectionName())
+        return indexRepository.findByIndexName(incomingEntity.getIndexName())
                 .orElseGet(() -> {
-                    Integer maxId = sectionRepository.findMaxSectionNo().orElse(0);
-                    entity.setSectionNo(maxId + 1);
-                    return sectionRepository.save(entity);
+                    // Not found by name, create a new one if indexCode is provided
+                    if (incomingEntity.getIndexCode() == null) {
+                        // Cannot create a new Index entity without an indexCode
+                        return null;
+                    }
+                    return indexRepository.save(incomingEntity);
                 });
     }
 
-    private GarmentGroup resolveGarmentGroup(GarmentGroup entity) {
-        if (entity == null) return null;
-        if (entity.getGarmentGroupNo() != null) return entity;
-        if (entity.getGarmentGroupName() == null) return null;
+    private IndexGroup resolveIndexGroup(IndexGroup incomingEntity) {
+        if (incomingEntity == null || incomingEntity.getIndexGroupName() == null) return null;
 
-        return garmentGroupRepository.findByGarmentGroupName(entity.getGarmentGroupName())
+        return indexGroupRepository.findByIndexGroupName(incomingEntity.getIndexGroupName())
                 .orElseGet(() -> {
-                    Integer maxId = garmentGroupRepository.findMaxGarmentGroupNo().orElse(0);
-                    entity.setGarmentGroupNo(maxId + 1);
-                    return garmentGroupRepository.save(entity);
+                    // Not found by name, create a new one
+                    Integer newIndexGroupNo = incomingEntity.getIndexGroupNo();
+                    if (newIndexGroupNo == null) {
+                        newIndexGroupNo = indexGroupRepository.findMaxIndexGroupNo().orElse(0) + 1;
+                    }
+                    incomingEntity.setIndexGroupNo(newIndexGroupNo);
+                    return indexGroupRepository.save(incomingEntity);
+                });
+    }
+
+    private Section resolveSection(Section incomingEntity) {
+        if (incomingEntity == null || incomingEntity.getSectionName() == null) return null;
+
+        return sectionRepository.findBySectionName(incomingEntity.getSectionName())
+                .orElseGet(() -> {
+                    // Not found by name, create a new one
+                    Integer newSectionNo = incomingEntity.getSectionNo();
+                    if (newSectionNo == null) {
+                        newSectionNo = sectionRepository.findMaxSectionNo().orElse(0) + 1;
+                    }
+                    incomingEntity.setSectionNo(newSectionNo);
+                    return sectionRepository.save(incomingEntity);
+                });
+    }
+
+    private GarmentGroup resolveGarmentGroup(GarmentGroup incomingEntity) {
+        if (incomingEntity == null || incomingEntity.getGarmentGroupName() == null) return null;
+
+        return garmentGroupRepository.findByGarmentGroupName(incomingEntity.getGarmentGroupName())
+                .orElseGet(() -> {
+                    // Not found by name, create a new one
+                    Integer newGarmentGroupNo = incomingEntity.getGarmentGroupNo();
+                    if (newGarmentGroupNo == null) {
+                        newGarmentGroupNo = garmentGroupRepository.findMaxGarmentGroupNo().orElse(0) + 1;
+                    }
+                    incomingEntity.setGarmentGroupNo(newGarmentGroupNo);
+                    return garmentGroupRepository.save(incomingEntity);
                 });
     }
 
@@ -190,7 +274,12 @@ public class ProductService {
     }
 
     public List<Product> search(String keyword) {
-        Page<Product> page = productRepository.findByProdNameContainingIgnoreCase(keyword, PageRequest.of(0, 10));
-        return page.getContent();
+        return productRepository.findByProdNameContainingIgnoreCase(keyword);
+    }
+
+    public List<ProductSearchResponseDto> searchByName(String keyword) {
+        return productRepository.findTop20ByProdNameContainingIgnoreCase(keyword).stream()
+                .map(product -> new ProductSearchResponseDto(product.getProductId(), product.getProdName()))
+                .collect(Collectors.toList());
     }
 }

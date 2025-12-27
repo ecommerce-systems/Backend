@@ -46,19 +46,57 @@ export default function () {
         const adminAccessToken = adminLoginRes.json('accessToken');
         const authHeaders = { 'Authorization': `Bearer ${adminAccessToken}`, 'Content-Type': 'application/json' };
 
-
-        const productPayload = { prodName: "K6 Test Product", detailDesc: "Created by k6" };
+        const productPayload = {
+            productCode: 12345,
+            prodName: "K6 Test Product",
+            productTypeName: "Test Type",
+            productGroupName: "Test Group",
+            graphicalAppearanceName: "Test Appearance",
+            colourGroupName: "Test Color",
+            perceivedColourValueName: "Test Color Value",
+            perceivedColourMasterName: "Test Color Master",
+            departmentName: "Test Department",
+            indexName: "Test Index",
+            indexGroupName: "Test Index Group",
+            sectionName: "Test Section",
+            garmentGroupName: "Test Garment Group",
+            detailDesc: "Created by k6",
+            price: 100.0
+        };
         const createRes = http.post(`${BASE_URL}/products`, JSON.stringify(productPayload), { headers: authHeaders });
         check(createRes, { 'admin can create product': (r) => r.status === 201 });
-        const productId = createRes.json('productId');
+        
+        if (createRes.status === 201) {
+            const productId = createRes.json().productId;
 
+            const getRes = http.get(`${BASE_URL}/products/${productId}`, { headers: authHeaders });
+            check(getRes, { 'admin can read product': (r) => r.status === 200 });
 
-        const getRes = http.get(`${BASE_URL}/products/${productId}`, { headers: authHeaders });
-        check(getRes, { 'admin can read product': (r) => r.status === 200 });
+            const productUpdatePayload = {
+                id: productId,
+                productCode: 54321,
+                prodName: "K6 Updated Product",
+                detailDesc: "Updated by k6",
+                price: 150.0,
+                productTypeName: "Updated Type",
+                productGroupName: "Updated Group",
+                graphicalAppearanceName: "Updated Appearance",
+                colourGroupName: "Updated Color",
+                perceivedColourValueName: "Updated Color Value",
+                perceivedColourMasterName: "Updated Color Master",
+                departmentName: "Updated Department",
+                indexName: "Updated Index",
+                indexGroupName: "Updated Index Group",
+                sectionName: "Updated Section",
+                garmentGroupName: "Updated Garment Group"
+            };
+            
+            const updateRes = http.put(`${BASE_URL}/products/${productId}`, JSON.stringify(productUpdatePayload), { headers: authHeaders });
+            check(updateRes, { 'admin can update product': (r) => r.status === 200 });
 
-
-        const deleteRes = http.del(`${BASE_URL}/products/${productId}`, null, { headers: authHeaders });
-        check(deleteRes, { 'admin can delete product': (r) => r.status === 204 });
+            const deleteRes = http.del(`${BASE_URL}/products/${productId}`, null, { headers: authHeaders });
+            check(deleteRes, { 'admin can delete product': (r) => r.status === 204 });
+        }
     }
     sleep(1);
 
@@ -81,7 +119,7 @@ export default function () {
 
         const productPayload = { prodName: "K6 Test Product", detailDesc: "Created by k6" };
         const createAttemptRes = http.post(`${BASE_URL}/products`, JSON.stringify(productPayload), { headers: userAuthHeaders });
-        check(createAttemptRes, { 'user cannot create product': (r) => r.status === 401 });
+        check(createAttemptRes, { 'user cannot create product': (r) => r.status === 403 });
 
 
 

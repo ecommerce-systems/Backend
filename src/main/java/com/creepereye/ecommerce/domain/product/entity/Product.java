@@ -1,16 +1,9 @@
 package com.creepereye.ecommerce.domain.product.entity;
 
-
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+
 @Getter
 @Setter
 @Entity
@@ -39,7 +32,7 @@ public class Product {
     private ProductType productType;
 
     @ManyToOne
-    @JoinColumn(name = "product_group_name")
+    @JoinColumn(name = "product_group_code")
     private ProductGroup productGroup;
 
     @ManyToOne
@@ -80,4 +73,8 @@ public class Product {
 
     @Column(name = "price")
     private BigDecimal price;
+
+
+    @OneToOne(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private ProductImage productImage;
 }

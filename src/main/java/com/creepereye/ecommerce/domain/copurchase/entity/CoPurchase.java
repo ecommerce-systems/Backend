@@ -27,6 +27,6 @@ public class CoPurchase {
     @JoinColumn(name = "target_product_id", nullable = false)
     private Product targetProduct;
 
-    @Column(name = "co_purchase_count", nullable = false)
+    @Column(name = "score", nullable = false)
     private Float score;
 }

@@ -1,5 +1,6 @@
 package com.creepereye.ecommerce.domain.copurchase.service;
 
+import com.creepereye.ecommerce.domain.copurchase.dto.CoPurchaseCreateRequest;
 import com.creepereye.ecommerce.domain.order.entity.Order;
 import com.creepereye.ecommerce.domain.order.entity.OrderDetail;
 import com.creepereye.ecommerce.domain.order.repository.OrderRepository;
@@ -7,6 +8,8 @@ import com.creepereye.ecommerce.domain.product.entity.Product;
 import com.creepereye.ecommerce.domain.copurchase.dto.CoPurchaseResponse;
 import com.creepereye.ecommerce.domain.copurchase.entity.CoPurchase;
 import com.creepereye.ecommerce.domain.copurchase.repository.CoPurchaseRepository;
+import com.creepereye.ecommerce.domain.product.repository.ProductRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +28,7 @@ public class CoPurchaseService {
 
     private final CoPurchaseRepository coPurchaseRepository;
     private final OrderRepository orderRepository;
+    private final ProductRepository productRepository;
 
     @Cacheable(value = "recommendations", key = "#productId")
     @Transactional(readOnly = true)
@@ -34,6 +38,23 @@ public class CoPurchaseService {
         return coPurchases.stream()
                 .map(coPurchase -> new CoPurchaseResponse(coPurchase.getTargetProduct()))
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void createCoPurchase(CoPurchaseCreateRequest request) {
+        Product sourceProduct = productRepository.findById(request.getSourceProductId().intValue())
+                .orElseThrow(() -> new EntityNotFoundException("Source Product not found with ID: " + request.getSourceProductId()));
+
+        Product targetProduct = productRepository.findById(request.getTargetProductId().intValue())
+                .orElseThrow(() -> new EntityNotFoundException("Target Product not found with ID: " + request.getTargetProductId()));
+
+        CoPurchase coPurchase = CoPurchase.builder()
+                .sourceProduct(sourceProduct)
+                .targetProduct(targetProduct)
+                .score(request.getScore().floatValue())
+                .build();
+
+        coPurchaseRepository.save(coPurchase);
     }
 
     @Transactional
