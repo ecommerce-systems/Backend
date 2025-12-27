@@ -7,6 +7,8 @@ import com.creepereye.ecommerce.domain.product.dto.ProductUpdateRequestDto;
 import com.creepereye.ecommerce.domain.product.entity.*;
 import com.creepereye.ecommerce.domain.product.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ProductService {
+
+    private static final Logger log = LoggerFactory.getLogger(ProductService.class);
 
     private final ProductRepository productRepository;
     private final ColourGroupRepository colourGroupRepository;
@@ -44,6 +48,7 @@ public class ProductService {
 
     @Transactional
     public Product createProduct(ProductCreateRequestDto dto) {
+        log.info("Attempting to create product with DTO: {}", dto);
         Product product = Product.builder()
                 .productCode(dto.getProductCode())
                 .prodName(dto.getProdName())
@@ -61,14 +66,18 @@ public class ProductService {
                 .section(new Section(null, dto.getSectionName()))
                 .garmentGroup(new GarmentGroup(null, dto.getGarmentGroupName()))
                 .build();
-
-        return save(product);
+        log.debug("Product entity built: {}", product);
+        Product savedProduct = save(product);
+        log.info("Product created and saved: {}", savedProduct);
+        return savedProduct;
     }
 
     @Transactional
     public Product updateProduct(Integer id, ProductUpdateRequestDto dto) {
+        log.info("Attempting to update product with ID: {} and DTO: {}", id, dto);
         Product existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found with id: " + id));
+        log.debug("Found existing product: {}", existingProduct);
 
         existingProduct.setProductCode(dto.getProductCode());
         existingProduct.setProdName(dto.getProdName());
@@ -87,11 +96,14 @@ public class ProductService {
         existingProduct.setSection(resolveSection(new Section(null, dto.getSectionName())));
         existingProduct.setGarmentGroup(resolveGarmentGroup(new GarmentGroup(null, dto.getGarmentGroupName())));
 
-        return productRepository.save(existingProduct);
+        Product updatedProduct = productRepository.save(existingProduct);
+        log.info("Product updated and saved: {}", updatedProduct);
+        return updatedProduct;
     }
 
     @Transactional
     public Product save(Product product) {
+        log.debug("Resolving categories for product: {}", product.getProdName());
         product.setProductType(resolveProductType(product.getProductType()));
         product.setProductGroup(resolveProductGroup(product.getProductGroup()));
         product.setGraphicalAppearance(resolveGraphicalAppearance(product.getGraphicalAppearance()));
@@ -103,168 +115,323 @@ public class ProductService {
         product.setIndexGroup(resolveIndexGroup(product.getIndexGroup()));
         product.setSection(resolveSection(product.getSection()));
         product.setGarmentGroup(resolveGarmentGroup(product.getGarmentGroup()));
-
+        log.debug("Categories resolved for product: {}", product.getProdName());
         return productRepository.save(product);
     }
 
     private ProductType resolveProductType(ProductType incomingEntity) {
-        if (incomingEntity == null || incomingEntity.getProductTypeName() == null) return null;
+        log.debug("Resolving ProductType for name: {}", incomingEntity != null ? incomingEntity.getProductTypeName() : "null");
+        if (incomingEntity == null || incomingEntity.getProductTypeName() == null) {
+            log.warn("Incoming ProductType entity or name is null, returning null.");
+            return null;
+        }
 
         return productTypeRepository.findByProductTypeName(incomingEntity.getProductTypeName())
                 .orElseGet(() -> {
-                    // Not found by name, create a new one
-                    Integer newProductTypeNo = incomingEntity.getProductTypeNo();
-                    if (newProductTypeNo == null) {
-                        newProductTypeNo = productTypeRepository.findMaxProductTypeNo().orElse(0) + 1;
+                    try {
+                        log.info("ProductType '{}' not found, attempting to create new one.", incomingEntity.getProductTypeName());
+                        Integer newProductTypeNo = incomingEntity.getProductTypeNo();
+                        if (newProductTypeNo == null) {
+                            newProductTypeNo = productTypeRepository.findMaxProductTypeNo().orElse(0) + 1;
+                            log.debug("Generated new ProductTypeNo: {}", newProductTypeNo);
+                        }
+                        incomingEntity.setProductTypeNo(newProductTypeNo);
+                        ProductType savedProductType = productTypeRepository.save(incomingEntity);
+                        log.info("Created and saved new ProductType: {}", savedProductType);
+                        return savedProductType;
+                    } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        // Concurrent insertion happened, try to find it again
+                        log.warn("Concurrent insertion of ProductType '{}' detected. Retrying to find existing entity.", incomingEntity.getProductTypeName());
+                        return productTypeRepository.findByProductTypeName(incomingEntity.getProductTypeName())
+                                .orElseThrow(() -> new IllegalStateException("Failed to find ProductType after concurrent insertion: " + incomingEntity.getProductTypeName(), e));
                     }
-                    incomingEntity.setProductTypeNo(newProductTypeNo);
-                    return productTypeRepository.save(incomingEntity);
                 });
     }
 
     private ProductGroup resolveProductGroup(ProductGroup entity) {
-        if (entity == null || entity.getProductGroupName() == null) return null;
+        log.debug("Resolving ProductGroup for name: {}", entity != null ? entity.getProductGroupName() : "null");
+        if (entity == null || entity.getProductGroupName() == null) {
+            log.warn("Incoming ProductGroup entity or name is null, returning null.");
+            return null;
+        }
 
         return productGroupRepository.findByProductGroupName(entity.getProductGroupName())
                 .orElseGet(() -> {
-                    int newCodeInt = productGroupRepository.findMaxProductGroupCodeAsInt().orElse(0) + 1;
-                    char newCode = (char) ('A' + newCodeInt - 1);
-                    entity.setProductGroupCode(newCode);
-                    return productGroupRepository.save(entity);
+                    try {
+                        log.info("ProductGroup '{}' not found, creating new one.", entity.getProductGroupName());
+                        int maxCode = productGroupRepository.findMaxProductGroupCodeAsInt().orElse(0);
+                        char newCode;
+                        if (maxCode == 0) {
+                            newCode = 'A';
+                        } else {
+                            newCode = (char) (maxCode + 1);
+                        }
+                        log.debug("Generated new ProductGroupCode: {}", newCode);
+                        entity.setProductGroupCode(newCode);
+                        ProductGroup savedProductGroup = productGroupRepository.save(entity);
+                        log.info("Created and saved new ProductGroup: {}", savedProductGroup);
+                        return savedProductGroup;
+                    } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        // Concurrent insertion happened, try to find it again
+                        log.warn("Concurrent insertion of ProductGroup '{}' detected. Retrying to find existing entity.", entity.getProductGroupName());
+                        return productGroupRepository.findByProductGroupName(entity.getProductGroupName())
+                                .orElseThrow(() -> new IllegalStateException("Failed to find ProductGroup after concurrent insertion: " + entity.getProductGroupName(), e));
+                    }
                 });
     }
 
     private GraphicalAppearance resolveGraphicalAppearance(GraphicalAppearance incomingEntity) {
-        if (incomingEntity == null || incomingEntity.getGraphicalAppearanceName() == null) return null;
+        log.debug("Resolving GraphicalAppearance for name: {}", incomingEntity != null ? incomingEntity.getGraphicalAppearanceName() : "null");
+        if (incomingEntity == null || incomingEntity.getGraphicalAppearanceName() == null) {
+            log.warn("Incoming GraphicalAppearance entity or name is null, returning null.");
+            return null;
+        }
 
         return graphicalAppearanceRepository.findByGraphicalAppearanceName(incomingEntity.getGraphicalAppearanceName())
                 .orElseGet(() -> {
-                    // Not found by name, create a new one
-                    Integer newGraphicalAppearanceNo = incomingEntity.getGraphicalAppearanceNo();
-                    if (newGraphicalAppearanceNo == null) {
-                        newGraphicalAppearanceNo = graphicalAppearanceRepository.findMaxGraphicalAppearanceNo().orElse(0) + 1;
+                    try {
+                        log.info("GraphicalAppearance '{}' not found, creating new one.", incomingEntity.getGraphicalAppearanceName());
+                        Integer newGraphicalAppearanceNo = incomingEntity.getGraphicalAppearanceNo();
+                        if (newGraphicalAppearanceNo == null) {
+                            newGraphicalAppearanceNo = graphicalAppearanceRepository.findMaxGraphicalAppearanceNo().orElse(0) + 1;
+                            log.debug("Generated new GraphicalAppearanceNo: {}", newGraphicalAppearanceNo);
+                        }
+                        incomingEntity.setGraphicalAppearanceNo(newGraphicalAppearanceNo);
+                        GraphicalAppearance savedGraphicalAppearance = graphicalAppearanceRepository.save(incomingEntity);
+                        log.info("Created and saved new GraphicalAppearance: {}", savedGraphicalAppearance);
+                        return savedGraphicalAppearance;
+                    } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        log.warn("Concurrent insertion of GraphicalAppearance '{}' detected. Retrying to find existing entity.", incomingEntity.getGraphicalAppearanceName());
+                        return graphicalAppearanceRepository.findByGraphicalAppearanceName(incomingEntity.getGraphicalAppearanceName())
+                                .orElseThrow(() -> new IllegalStateException("Failed to find GraphicalAppearance after concurrent insertion: " + incomingEntity.getGraphicalAppearanceName(), e));
                     }
-                    incomingEntity.setGraphicalAppearanceNo(newGraphicalAppearanceNo);
-                    return graphicalAppearanceRepository.save(incomingEntity);
                 });
     }
 
     private ColourGroup resolveColourGroup(ColourGroup incomingEntity) {
-        if (incomingEntity == null || incomingEntity.getColourGroupName() == null) return null;
+        log.debug("Resolving ColourGroup for name: {}", incomingEntity != null ? incomingEntity.getColourGroupName() : "null");
+        if (incomingEntity == null || incomingEntity.getColourGroupName() == null) {
+            log.warn("Incoming ColourGroup entity or name is null, returning null.");
+            return null;
+        }
 
         return colourGroupRepository.findByColourGroupName(incomingEntity.getColourGroupName())
                 .orElseGet(() -> {
-                    // Not found by name, create a new one
-                    Integer newColourGroupCode = incomingEntity.getColourGroupCode();
-                    if (newColourGroupCode == null) {
-                        newColourGroupCode = colourGroupRepository.findMaxColourGroupCode().orElse(0) + 1;
+                    try {
+                        log.info("ColourGroup '{}' not found, creating new one.", incomingEntity.getColourGroupName());
+                        Integer newColourGroupCode = incomingEntity.getColourGroupCode();
+                        if (newColourGroupCode == null) {
+                            newColourGroupCode = colourGroupRepository.findMaxColourGroupCode().orElse(0) + 1;
+                            log.debug("Generated new ColourGroupCode: {}", newColourGroupCode);
+                        }
+                        incomingEntity.setColourGroupCode(newColourGroupCode);
+                        ColourGroup savedColourGroup = colourGroupRepository.save(incomingEntity);
+                        log.info("Created and saved new ColourGroup: {}", savedColourGroup);
+                        return savedColourGroup;
+                    } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        log.warn("Concurrent insertion of ColourGroup '{}' detected. Retrying to find existing entity.", incomingEntity.getColourGroupName());
+                        return colourGroupRepository.findByColourGroupName(incomingEntity.getColourGroupName())
+                                .orElseThrow(() -> new IllegalStateException("Failed to find ColourGroup after concurrent insertion: " + incomingEntity.getColourGroupName(), e));
                     }
-                    incomingEntity.setColourGroupCode(newColourGroupCode);
-                    return colourGroupRepository.save(incomingEntity);
                 });
     }
 
     private PerceivedColourValue resolvePerceivedColourValue(PerceivedColourValue incomingEntity) {
-        if (incomingEntity == null || incomingEntity.getPerceivedColourValueName() == null) return null;
+        log.debug("Resolving PerceivedColourValue for name: {}", incomingEntity != null ? incomingEntity.getPerceivedColourValueName() : "null");
+        if (incomingEntity == null || incomingEntity.getPerceivedColourValueName() == null) {
+            log.warn("Incoming PerceivedColourValue entity or name is null, returning null.");
+            return null;
+        }
 
         return perceivedColourValueRepository.findByPerceivedColourValueName(incomingEntity.getPerceivedColourValueName())
                 .orElseGet(() -> {
-                    // Not found by name, create a new one
-                    Integer newPerceivedColourValueId = incomingEntity.getPerceivedColourValueId();
-                    if (newPerceivedColourValueId == null) {
-                        newPerceivedColourValueId = perceivedColourValueRepository.findMaxPerceivedColourValueId().orElse(0) + 1;
+                    try {
+                        log.info("PerceivedColourValue '{}' not found, creating new one.", incomingEntity.getPerceivedColourValueName());
+                        Integer newPerceivedColourValueId = incomingEntity.getPerceivedColourValueId();
+                        if (newPerceivedColourValueId == null) {
+                            newPerceivedColourValueId = perceivedColourValueRepository.findMaxPerceivedColourValueId().orElse(0) + 1;
+                            log.debug("Generated new PerceivedColourValueId: {}", newPerceivedColourValueId);
+                        }
+                        incomingEntity.setPerceivedColourValueId(newPerceivedColourValueId);
+                        PerceivedColourValue savedPerceivedColourValue = perceivedColourValueRepository.save(incomingEntity);
+                        log.info("Created and saved new PerceivedColourValue: {}", savedPerceivedColourValue);
+                        return savedPerceivedColourValue;
+                    } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        log.warn("Concurrent insertion of PerceivedColourValue '{}' detected. Retrying to find existing entity.", incomingEntity.getPerceivedColourValueName());
+                        return perceivedColourValueRepository.findByPerceivedColourValueName(incomingEntity.getPerceivedColourValueName())
+                                .orElseThrow(() -> new IllegalStateException("Failed to find PerceivedColourValue after concurrent insertion: " + incomingEntity.getPerceivedColourValueName(), e));
                     }
-                    incomingEntity.setPerceivedColourValueId(newPerceivedColourValueId);
-                    return perceivedColourValueRepository.save(incomingEntity);
                 });
     }
 
     private PerceivedColourMaster resolvePerceivedColourMaster(PerceivedColourMaster incomingEntity) {
-        if (incomingEntity == null || incomingEntity.getPerceivedColourMasterName() == null) return null;
+        log.debug("Resolving PerceivedColourMaster for name: {}", incomingEntity != null ? incomingEntity.getPerceivedColourMasterName() : "null");
+        if (incomingEntity == null || incomingEntity.getPerceivedColourMasterName() == null) {
+            log.warn("Incoming PerceivedColourMaster entity or name is null, returning null.");
+            return null;
+        }
 
         return perceivedColourMasterRepository.findByPerceivedColourMasterName(incomingEntity.getPerceivedColourMasterName())
                 .orElseGet(() -> {
-                    // Not found by name, create a new one
-                    Integer newPerceivedColourMasterId = incomingEntity.getPerceivedColourMasterId();
-                    if (newPerceivedColourMasterId == null) {
-                        newPerceivedColourMasterId = perceivedColourMasterRepository.findMaxPerceivedColourMasterId().orElse(0) + 1;
+                    try {
+                        log.info("PerceivedColourMaster '{}' not found, creating new one.", incomingEntity.getPerceivedColourMasterName());
+                        Integer newPerceivedColourMasterId = incomingEntity.getPerceivedColourMasterId();
+                        if (newPerceivedColourMasterId == null) {
+                            newPerceivedColourMasterId = perceivedColourMasterRepository.findMaxPerceivedColourMasterId().orElse(0) + 1;
+                            log.debug("Generated new PerceivedColourMasterId: {}", newPerceivedColourMasterId);
+                        }
+                        incomingEntity.setPerceivedColourMasterId(newPerceivedColourMasterId);
+                        PerceivedColourMaster savedPerceivedColourMaster = perceivedColourMasterRepository.save(incomingEntity);
+                        log.info("Created and saved new PerceivedColourMaster: {}", savedPerceivedColourMaster);
+                        return savedPerceivedColourMaster;
+                    } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        log.warn("Concurrent insertion of PerceivedColourMaster '{}' detected. Retrying to find existing entity.", incomingEntity.getPerceivedColourMasterName());
+                        return perceivedColourMasterRepository.findByPerceivedColourMasterName(incomingEntity.getPerceivedColourMasterName())
+                                .orElseThrow(() -> new IllegalStateException("Failed to find PerceivedColourMaster after concurrent insertion: " + incomingEntity.getPerceivedColourMasterName(), e));
                     }
-                    incomingEntity.setPerceivedColourMasterId(newPerceivedColourMasterId);
-                    return perceivedColourMasterRepository.save(incomingEntity);
                 });
     }
 
     private Department resolveDepartment(Department incomingEntity) {
-        if (incomingEntity == null || incomingEntity.getDepartmentName() == null) return null;
+        log.debug("Resolving Department for name: {}", incomingEntity != null ? incomingEntity.getDepartmentName() : "null");
+        if (incomingEntity == null || incomingEntity.getDepartmentName() == null) {
+            log.warn("Incoming Department entity or name is null, returning null.");
+            return null;
+        }
 
         return departmentRepository.findByDepartmentName(incomingEntity.getDepartmentName())
                 .orElseGet(() -> {
-                    // Not found by name, create a new one
-                    Integer newDepartmentNo = incomingEntity.getDepartmentNo();
-                    if (newDepartmentNo == null) {
-                        newDepartmentNo = departmentRepository.findMaxDepartmentNo().orElse(0) + 1;
+                    try {
+                        log.info("Department '{}' not found, creating new one.", incomingEntity.getDepartmentName());
+                        Integer newDepartmentNo = incomingEntity.getDepartmentNo();
+                        if (newDepartmentNo == null) {
+                            newDepartmentNo = departmentRepository.findMaxDepartmentNo().orElse(0) + 1;
+                            log.debug("Generated new DepartmentNo: {}", newDepartmentNo);
+                        }
+                        incomingEntity.setDepartmentNo(newDepartmentNo);
+                        Department savedDepartment = departmentRepository.save(incomingEntity);
+                        log.info("Created and saved new Department: {}", savedDepartment);
+                        return savedDepartment;
+                    } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        log.warn("Concurrent insertion of Department '{}' detected. Retrying to find existing entity.", incomingEntity.getDepartmentName());
+                        return departmentRepository.findByDepartmentName(incomingEntity.getDepartmentName())
+                                .orElseThrow(() -> new IllegalStateException("Failed to find Department after concurrent insertion: " + incomingEntity.getDepartmentName(), e));
                     }
-                    incomingEntity.setDepartmentNo(newDepartmentNo);
-                    return departmentRepository.save(incomingEntity);
                 });
     }
 
     private Index resolveIndex(Index incomingEntity) {
-        if (incomingEntity == null || incomingEntity.getIndexName() == null) return null;
+        log.debug("Resolving Index for name: {}", incomingEntity != null ? incomingEntity.getIndexName() : "null");
+        if (incomingEntity == null || incomingEntity.getIndexName() == null) {
+            log.warn("Incoming Index entity or name is null, returning null.");
+            return null;
+        }
 
         return indexRepository.findByIndexName(incomingEntity.getIndexName())
                 .orElseGet(() -> {
-                    // Not found by name, create a new one if indexCode is provided
-                    if (incomingEntity.getIndexCode() == null) {
-                        // Cannot create a new Index entity without an indexCode
-                        return null;
+                    try {
+                        log.info("Index '{}' not found, creating new one.", incomingEntity.getIndexName());
+                        int maxCode = indexRepository.findMaxIndexCodeAsInt().orElse(0);
+                        char newCode;
+                        if (maxCode == 0) {
+                            newCode = 'A';
+                        } else {
+                            newCode = (char) (maxCode + 1);
+                        }
+                        log.debug("Generated new IndexCode: {}", newCode);
+                        incomingEntity.setIndexCode(newCode);
+                        Index savedIndex = indexRepository.save(incomingEntity);
+                        log.info("Created and saved new Index: {}", savedIndex);
+                        return savedIndex;
+                    } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        log.warn("Concurrent insertion of Index '{}' detected. Retrying to find existing entity.", incomingEntity.getIndexName());
+                        return indexRepository.findByIndexName(incomingEntity.getIndexName())
+                                .orElseThrow(() -> new IllegalStateException("Failed to find Index after concurrent insertion: " + incomingEntity.getIndexName(), e));
                     }
-                    return indexRepository.save(incomingEntity);
                 });
     }
 
     private IndexGroup resolveIndexGroup(IndexGroup incomingEntity) {
-        if (incomingEntity == null || incomingEntity.getIndexGroupName() == null) return null;
+        log.debug("Resolving IndexGroup for name: {}", incomingEntity != null ? incomingEntity.getIndexGroupName() : "null");
+        if (incomingEntity == null || incomingEntity.getIndexGroupName() == null) {
+            log.warn("Incoming IndexGroup entity or name is null, returning null.");
+            return null;
+        }
 
         return indexGroupRepository.findByIndexGroupName(incomingEntity.getIndexGroupName())
                 .orElseGet(() -> {
-                    // Not found by name, create a new one
-                    Integer newIndexGroupNo = incomingEntity.getIndexGroupNo();
-                    if (newIndexGroupNo == null) {
-                        newIndexGroupNo = indexGroupRepository.findMaxIndexGroupNo().orElse(0) + 1;
+                    try {
+                        log.info("IndexGroup '{}' not found, creating new one.", incomingEntity.getIndexGroupName());
+                        Integer newIndexGroupNo = incomingEntity.getIndexGroupNo();
+                        if (newIndexGroupNo == null) {
+                            newIndexGroupNo = indexGroupRepository.findMaxIndexGroupNo().orElse(0) + 1;
+                            log.debug("Generated new IndexGroupNo: {}", newIndexGroupNo);
+                        }
+                        incomingEntity.setIndexGroupNo(newIndexGroupNo);
+                        IndexGroup savedIndexGroup = indexGroupRepository.save(incomingEntity);
+                        log.info("Created and saved new IndexGroup: {}", savedIndexGroup);
+                        return savedIndexGroup;
+                    } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        log.warn("Concurrent insertion of IndexGroup '{}' detected. Retrying to find existing entity.", incomingEntity.getIndexGroupName());
+                        return indexGroupRepository.findByIndexGroupName(incomingEntity.getIndexGroupName())
+                                .orElseThrow(() -> new IllegalStateException("Failed to find IndexGroup after concurrent insertion: " + incomingEntity.getIndexGroupName(), e));
                     }
-                    incomingEntity.setIndexGroupNo(newIndexGroupNo);
-                    return indexGroupRepository.save(incomingEntity);
                 });
     }
 
     private Section resolveSection(Section incomingEntity) {
-        if (incomingEntity == null || incomingEntity.getSectionName() == null) return null;
+        log.debug("Resolving Section for name: {}", incomingEntity != null ? incomingEntity.getSectionName() : "null");
+        if (incomingEntity == null || incomingEntity.getSectionName() == null) {
+            log.warn("Incoming Section entity or name is null, returning null.");
+            return null;
+        }
 
         return sectionRepository.findBySectionName(incomingEntity.getSectionName())
                 .orElseGet(() -> {
-                    // Not found by name, create a new one
-                    Integer newSectionNo = incomingEntity.getSectionNo();
-                    if (newSectionNo == null) {
-                        newSectionNo = sectionRepository.findMaxSectionNo().orElse(0) + 1;
+                    try {
+                        log.info("Section '{}' not found, creating new one.", incomingEntity.getSectionName());
+                        Integer newSectionNo = incomingEntity.getSectionNo();
+                        if (newSectionNo == null) {
+                            newSectionNo = sectionRepository.findMaxSectionNo().orElse(0) + 1;
+                            log.debug("Generated new SectionNo: {}", newSectionNo);
+                        }
+                        incomingEntity.setSectionNo(newSectionNo);
+                        Section savedSection = sectionRepository.save(incomingEntity);
+                        log.info("Created and saved new Section: {}", savedSection);
+                        return savedSection;
+                    } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        log.warn("Concurrent insertion of Section '{}' detected. Retrying to find existing entity.", incomingEntity.getSectionName());
+                        return sectionRepository.findBySectionName(incomingEntity.getSectionName())
+                                .orElseThrow(() -> new IllegalStateException("Failed to find Section after concurrent insertion: " + incomingEntity.getSectionName(), e));
                     }
-                    incomingEntity.setSectionNo(newSectionNo);
-                    return sectionRepository.save(incomingEntity);
                 });
     }
 
     private GarmentGroup resolveGarmentGroup(GarmentGroup incomingEntity) {
-        if (incomingEntity == null || incomingEntity.getGarmentGroupName() == null) return null;
+        log.debug("Resolving GarmentGroup for name: {}", incomingEntity != null ? incomingEntity.getGarmentGroupName() : "null");
+        if (incomingEntity == null || incomingEntity.getGarmentGroupName() == null) {
+            log.warn("Incoming GarmentGroup entity or name is null, returning null.");
+            return null;
+        }
 
         return garmentGroupRepository.findByGarmentGroupName(incomingEntity.getGarmentGroupName())
                 .orElseGet(() -> {
-                    // Not found by name, create a new one
-                    Integer newGarmentGroupNo = incomingEntity.getGarmentGroupNo();
-                    if (newGarmentGroupNo == null) {
-                        newGarmentGroupNo = garmentGroupRepository.findMaxGarmentGroupNo().orElse(0) + 1;
+                    try {
+                        log.info("GarmentGroup '{}' not found, creating new one.", incomingEntity.getGarmentGroupName());
+                        Integer newGarmentGroupNo = incomingEntity.getGarmentGroupNo();
+                        if (newGarmentGroupNo == null) {
+                            newGarmentGroupNo = garmentGroupRepository.findMaxGarmentGroupNo().orElse(0) + 1;
+                            log.debug("Generated new GarmentGroupNo: {}", newGarmentGroupNo);
+                        }
+                        incomingEntity.setGarmentGroupNo(newGarmentGroupNo);
+                        GarmentGroup savedGarmentGroup = garmentGroupRepository.save(incomingEntity);
+                        log.info("Created and saved new GarmentGroup: {}", savedGarmentGroup);
+                        return savedGarmentGroup;
+                    } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        log.warn("Concurrent insertion of GarmentGroup '{}' detected. Retrying to find existing entity.", incomingEntity.getGarmentGroupName());
+                        return garmentGroupRepository.findByGarmentGroupName(incomingEntity.getGarmentGroupName())
+                                .orElseThrow(() -> new IllegalStateException("Failed to find GarmentGroup after concurrent insertion: " + incomingEntity.getGarmentGroupName(), e));
                     }
-                    incomingEntity.setGarmentGroupNo(newGarmentGroupNo);
-                    return garmentGroupRepository.save(incomingEntity);
                 });
     }
 
