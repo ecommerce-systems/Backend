@@ -48,8 +48,8 @@ class CoPurchaseServiceTest {
     @Test
     void getRecommendations() {
         // given
-        CoPurchase coPurchase = CoPurchase.builder().sourceProduct(product1).targetProduct(product2).coPurchaseCount(10L).build();
-        when(coPurchaseRepository.findBySourceProductProductIdOrderByCoPurchaseCountDesc(1, PageRequest.of(0, 10)))
+        CoPurchase coPurchase = CoPurchase.builder().sourceProduct(product1).targetProduct(product2).score(10f).build();
+        when(coPurchaseRepository.findBySourceProductProductIdOrderByScoreDesc(1))
                 .thenReturn(Collections.singletonList(coPurchase));
 
         // when

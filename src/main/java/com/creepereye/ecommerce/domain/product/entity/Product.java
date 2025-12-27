@@ -10,8 +10,7 @@ import lombok.Setter;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.*;
-
-
+import java.math.BigDecimal;
 @Getter
 @Setter
 @Entity
@@ -80,5 +79,5 @@ public class Product {
     private GarmentGroup garmentGroup;
 
     @Column(name = "price")
-    private java.math.BigDecimal price;
+    private BigDecimal price;
 }

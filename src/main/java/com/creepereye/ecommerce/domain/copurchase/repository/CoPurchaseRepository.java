@@ -10,5 +10,5 @@ import java.util.List;
 @Repository
 public interface CoPurchaseRepository extends JpaRepository<CoPurchase, Long> {
 
-    List<CoPurchase> findBySourceProductProductIdOrderByCoPurchaseCountDesc(Integer sourceProductId, Pageable pageable);
+    List<CoPurchase> findBySourceProductProductIdOrderByScoreDesc(Integer sourceProductId);
 }

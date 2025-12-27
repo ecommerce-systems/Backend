@@ -28,5 +28,5 @@ public class CoPurchase {
     private Product targetProduct;
 
     @Column(name = "co_purchase_count", nullable = false)
-    private Long coPurchaseCount;
+    private Float score;
 }

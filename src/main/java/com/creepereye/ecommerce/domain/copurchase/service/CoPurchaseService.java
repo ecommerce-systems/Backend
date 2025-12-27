@@ -29,8 +29,7 @@ public class CoPurchaseService {
     @Cacheable(value = "recommendations", key = "#productId")
     @Transactional(readOnly = true)
     public List<CoPurchaseResponse> getRecommendations(Integer productId) {
-        List<CoPurchase> coPurchases = coPurchaseRepository.findBySourceProductProductIdOrderByCoPurchaseCountDesc(
-                productId, PageRequest.of(0, 10));
+        List<CoPurchase> coPurchases = coPurchaseRepository.findBySourceProductProductIdOrderByScoreDesc(productId);
 
         return coPurchases.stream()
                 .map(coPurchase -> new CoPurchaseResponse(coPurchase.getTargetProduct()))
@@ -66,7 +65,7 @@ public class CoPurchaseService {
                 coPurchases.add(CoPurchase.builder()
                         .sourceProduct(sourceProduct)
                         .targetProduct(targetProduct)
-                        .coPurchaseCount(count)
+                        .score(count.floatValue())
                         .build());
             }
         }

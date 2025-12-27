@@ -22,7 +22,7 @@ class CoPurchaseRepositoryTest {
     private CoPurchaseRepository coPurchaseRepository;
 
     @Test
-    void findBySourceProductProductIdOrderByCoPurchaseCountDesc() {
+    void findBySourceProductProductIdOrderByScoreDesc() {
         // given
         Product product1 = Product.builder().prodName("Product 1").build();
         Product product2 = Product.builder().prodName("Product 2").build();
@@ -31,14 +31,14 @@ class CoPurchaseRepositoryTest {
         entityManager.persist(product2);
         entityManager.persist(product3);
 
-        CoPurchase coPurchase1 = CoPurchase.builder().sourceProduct(product1).targetProduct(product2).coPurchaseCount(10L).build();
-        CoPurchase coPurchase2 = CoPurchase.builder().sourceProduct(product1).targetProduct(product3).coPurchaseCount(20L).build();
+        CoPurchase coPurchase1 = CoPurchase.builder().sourceProduct(product1).targetProduct(product2).score(10f).build();
+        CoPurchase coPurchase2 = CoPurchase.builder().sourceProduct(product1).targetProduct(product3).score(20f).build();
         entityManager.persist(coPurchase1);
         entityManager.persist(coPurchase2);
         entityManager.flush();
 
         // when
-        List<CoPurchase> result = coPurchaseRepository.findBySourceProductProductIdOrderByCoPurchaseCountDesc(product1.getProductId(), PageRequest.of(0, 10));
+        List<CoPurchase> result = coPurchaseRepository.findBySourceProductProductIdOrderByScoreDesc(product1.getProductId());
 
         // then
         assertThat(result).hasSize(2);
