@@ -34,24 +34,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String token = resolveToken(request);
-        logger.debug("Authorization header: {}", request.getHeader("Authorization"));
-        logger.debug("Resolved token: {}", token);
+        logger.debug("➡️ Authorization header: {}", request.getHeader("Authorization"));
+        logger.debug("🔑 Resolved token: {}", token);
 
         if (StringUtils.hasText(token)) {
             boolean isValid = jwtTokenProvider.validateToken(token);
-            logger.debug("Is token valid? {}", isValid);
+            logger.debug("✅ Is token valid? {}", isValid);
 
             if (isValid) {
                 if (redisService.getValues(token) == null) {
                     Authentication authentication = jwtTokenProvider.getAuthentication(token);
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    logger.info("Authentication set for user: {}", authentication.getName());
+                    logger.info("✨ Authentication set for user: {}", authentication.getName());
                 } else {
-                    logger.warn("Invalid JWT token: This token is blacklisted");
+                    logger.warn("🚫 Invalid JWT token: This token is blacklisted");
                 }
+            } else {
+                logger.warn("❌ JWT token validation failed for token: {}", token);
             }
         } else {
-            logger.debug("No JWT token found in request");
+            logger.debug("❓ No JWT token found in request");
         }
 
 

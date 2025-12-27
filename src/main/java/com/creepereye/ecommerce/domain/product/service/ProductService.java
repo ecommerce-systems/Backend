@@ -74,10 +74,13 @@ public class ProductService {
 
     @Transactional
     public Product updateProduct(Integer id, ProductUpdateRequestDto dto) {
-        log.info("Attempting to update product with ID: {} and DTO: {}", id, dto);
+        log.info("🔄 Attempting to update product with ID: {} and DTO: {}", id, dto);
         Product existingProduct = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Product not found with id: " + id));
-        log.debug("Found existing product: {}", existingProduct);
+                .orElseThrow(() -> {
+                    log.error("❌ Product not found with id: {}", id);
+                    return new IllegalArgumentException("Product not found with id: " + id);
+                });
+        log.debug("🔍 Found existing product: {}", existingProduct);
 
         existingProduct.setProductCode(dto.getProductCode());
         existingProduct.setProdName(dto.getProdName());
@@ -96,8 +99,9 @@ public class ProductService {
         existingProduct.setSection(resolveSection(new Section(null, dto.getSectionName())));
         existingProduct.setGarmentGroup(resolveGarmentGroup(new GarmentGroup(null, dto.getGarmentGroupName())));
 
+        log.debug("💾 Saving updated product for ID: {}", id);
         Product updatedProduct = productRepository.save(existingProduct);
-        log.info("Product updated and saved: {}", updatedProduct);
+        log.info("✅ Product updated and saved: {}", updatedProduct);
         return updatedProduct;
     }
 

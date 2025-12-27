@@ -37,7 +37,7 @@ export default function () {
 
     const adminSignupRes = signup(adminUsername, adminPassword, adminName, true);
     check(adminSignupRes, { 'admin signup successful': (r) => r.status === 200 || r.status === 201 });
-    sleep(1);
+    // Removed sleep(1)
 
     const adminLoginRes = login(adminUsername, adminPassword);
     check(adminLoginRes, { 'admin login successful': (r) => r.status === 200 });
@@ -67,13 +67,14 @@ export default function () {
         check(createRes, { 'admin can create product': (r) => r.status === 201 });
         
         if (createRes.status === 201) {
+            console.log("Create Product Response:", JSON.stringify(createRes.json(), null, 2));
             const productId = createRes.json().productId;
 
             const getRes = http.get(`${BASE_URL}/products/${productId}`, { headers: authHeaders });
             check(getRes, { 'admin can read product': (r) => r.status === 200 });
 
             const productUpdatePayload = {
-                id: productId,
+                productId: productId,
                 productCode: 54321,
                 prodName: "K6 Updated Product",
                 detailDesc: "Updated by k6",
@@ -92,6 +93,11 @@ export default function () {
             };
             
             const updateRes = http.put(`${BASE_URL}/products/${productId}`, JSON.stringify(productUpdatePayload), { headers: authHeaders });
+            if (updateRes.status === 200) {
+                console.log("Update Product Response:", JSON.stringify(updateRes.json(), null, 2));
+            } else {
+                console.log(`Update Product Failed: Status ${updateRes.status}, Body: ${updateRes.body}`);
+            }
             check(updateRes, { 'admin can update product': (r) => r.status === 200 });
 
             // const deleteRes = http.del(`${BASE_URL}/products/${productId}`, null, { headers: authHeaders });
