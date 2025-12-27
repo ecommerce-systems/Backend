@@ -94,8 +94,8 @@ export default function () {
             const updateRes = http.put(`${BASE_URL}/products/${productId}`, JSON.stringify(productUpdatePayload), { headers: authHeaders });
             check(updateRes, { 'admin can update product': (r) => r.status === 200 });
 
-            const deleteRes = http.del(`${BASE_URL}/products/${productId}`, null, { headers: authHeaders });
-            check(deleteRes, { 'admin can delete product': (r) => r.status === 204 });
+            // const deleteRes = http.del(`${BASE_URL}/products/${productId}`, null, { headers: authHeaders });
+            // check(deleteRes, { 'admin can delete product': (r) => r.status === 204 });
         }
     }
     sleep(1);

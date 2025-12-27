@@ -158,13 +158,13 @@ public class ProductService {
         return productGroupRepository.findByProductGroupName(entity.getProductGroupName())
                 .orElseGet(() -> {
                     try {
-                        log.info("ProductGroup '{}' not found, creating new one.", entity.getProductGroupName());
-                        int maxCode = productGroupRepository.findMaxProductGroupCodeAsInt().orElse(0);
+                        log.info("ProductGroup '{}' not found, attempting to create new one.", entity.getProductGroupName());
                         char newCode;
-                        if (maxCode == 0) {
+                        Optional<Character> maxCodeOptional = productGroupRepository.findTopByOrderByProductGroupCodeDesc();
+                        if (maxCodeOptional.isEmpty()) {
                             newCode = 'A';
                         } else {
-                            newCode = (char) (maxCode + 1);
+                            newCode = (char) (maxCodeOptional.get() + 1);
                         }
                         log.debug("Generated new ProductGroupCode: {}", newCode);
                         entity.setProductGroupCode(newCode);
@@ -331,12 +331,12 @@ public class ProductService {
                 .orElseGet(() -> {
                     try {
                         log.info("Index '{}' not found, creating new one.", incomingEntity.getIndexName());
-                        int maxCode = indexRepository.findMaxIndexCodeAsInt().orElse(0);
                         char newCode;
-                        if (maxCode == 0) {
+                        Optional<Character> maxCodeOptional = indexRepository.findTopByOrderByIndexCodeDesc();
+                        if (maxCodeOptional.isEmpty()) {
                             newCode = 'A';
                         } else {
-                            newCode = (char) (maxCode + 1);
+                            newCode = (char) (maxCodeOptional.get() + 1);
                         }
                         log.debug("Generated new IndexCode: {}", newCode);
                         incomingEntity.setIndexCode(newCode);
