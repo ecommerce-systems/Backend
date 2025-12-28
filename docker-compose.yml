@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  backend:
+    image: ecommerce-backend:latest # Assuming your Dockerfile builds an image named ecommerce-backend
+    ports:
+      - "8080:8080"
+    environment:
+      # Replace with your actual database credentials
+      DB_URL: jdbc:postgresql://db:5432/ecommerce
+      DB_USERNAME: user
+      DB_PASSWORD: password
+
+      # Replace with your actual Redis credentials
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+      # IMPORTANT: Replace with a strong, base64-encoded secret key
+      # You can generate one using: echo "your-secret-key-here" | base64
+      JWT_SECRET: "Y3JlZXBlcmV5ZS1lY29tbWVyY2Utc3lzdGVtLXNlY3JldC1rZXk=" 
+      JWT_ACCESS_TOKEN_VALIDITY: 3600 # 1 hour
+      JWT_REFRESH_TOKEN_VALIDITY: 604800 # 7 days
+    depends_on:
+      - db
+      - redis
+    networks:
+      - ecommerce-network
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: ecommerce
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - ecommerce-network
+
+  redis:
+    image: redis:6.2-alpine
+    networks:
+      - ecommerce-network
+
+networks:
+  ecommerce-network:
+    driver: bridge
+
+volumes:
+  db_data:

@@ -42,13 +42,14 @@ export default function () {
     const adminLoginRes = login(adminUsername, adminPassword);
     check(adminLoginRes, { 'admin login successful': (r) => r.status === 200 });
 
-            if (adminLoginRes.status === 200) {
-                const adminAccessToken = adminLoginRes.json('accessToken');
-                const authHeaders = { 'Authorization': `Bearer ${adminAccessToken}`, 'Content-Type': 'application/json' };
-                console.log(`Admin Access Token: ${adminAccessToken}`);
-                console.log(`Auth Headers for Product Create/Update: ${JSON.stringify(authHeaders)}`);
-    
-                const productPayload = {            productCode: 12345,
+    if (adminLoginRes.status === 200) {
+        const adminAccessToken = adminLoginRes.json('accessToken');
+        const authHeaders = { 'Authorization': `Bearer ${adminAccessToken}`, 'Content-Type': 'application/json' };
+        console.log(`Admin Access Token: ${adminAccessToken}`);
+        console.log(`Auth Headers for Product Create/Update: ${JSON.stringify(authHeaders)}`);
+
+        const productPayload = {
+            productCode: 12345,
             prodName: "K6 Test Product",
             productTypeName: "Test Type",
             productGroupName: "Test Group",
@@ -66,6 +67,9 @@ export default function () {
         };
         const createRes = http.post(`${BASE_URL}/products`, JSON.stringify(productPayload), { headers: authHeaders });
         check(createRes, { 'admin can create product': (r) => r.status === 201 });
+        if (createRes.status !== 201) {
+            console.error(`Product creation failed: Status ${createRes.status}, Body: ${createRes.body}`);
+        }
         
         if (createRes.status === 201) {
             console.log("Create Product Response:", JSON.stringify(createRes.json(), null, 2));
@@ -73,6 +77,9 @@ export default function () {
 
             const getRes = http.get(`${BASE_URL}/products/${productId}`, { headers: authHeaders });
             check(getRes, { 'admin can read product': (r) => r.status === 200 });
+            if (getRes.status !== 200) {
+                console.error(`Product read failed: Status ${getRes.status}, Body: ${getRes.body}`);
+            }
 
             const productUpdatePayload = {
                 productId: productId,
@@ -97,13 +104,15 @@ export default function () {
             if (updateRes.status === 200) {
                 console.log("Update Product Response:", JSON.stringify(updateRes.json(), null, 2));
             } else {
-                console.log(`Update Product Failed: Status ${updateRes.status}, Body: ${updateRes.body}`);
+                console.error(`Update Product Failed: Status ${updateRes.status}, Body: ${updateRes.body}`);
             }
             check(updateRes, { 'admin can update product': (r) => r.status === 200 });
 
             // const deleteRes = http.del(`${BASE_URL}/products/${productId}`, null, { headers: authHeaders });
             // check(deleteRes, { 'admin can delete product': (r) => r.status === 204 });
         }
+    } else {
+        console.error(`Admin login failed: Status ${adminLoginRes.status}, Body: ${adminLoginRes.body}`);
     }
     sleep(1);
 
