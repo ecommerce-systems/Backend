@@ -55,7 +55,7 @@ services:
     networks:
       - ecommerce
   backend:
-    image: creepereye/ecommerce-backend:2
+    image: creepereye/ecommerce-backend:${APP_IMAGE_TAG:-latest}
     ports:
       - "8080:8080"
     environment:
