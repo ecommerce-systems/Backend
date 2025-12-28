@@ -1,8 +1,5 @@
 package com.creepereye.ecommerce.global.security.provider;
 
-
-
-
 import com.creepereye.ecommerce.domain.auth.dto.TokenResponse;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
@@ -34,7 +31,7 @@ public class JwtTokenProvider {
             @Value("${jwt.secret}") String secretKey,
             @Value("${jwt.access-token-validity-in-seconds}") long accessTokenValidityInSeconds,
             @Value("${jwt.refresh-token-validity-in-seconds}") long refreshTokenValidityInSeconds) {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey); // 모든 서비스에서 동일하게 Base64 디코딩
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         this.key = Keys.hmacShaKeyFor(keyBytes);
         this.accessTokenValidityInMilliseconds = accessTokenValidityInSeconds * 1000;
         this.refreshTokenValidityInMilliseconds = refreshTokenValidityInSeconds * 1000;
@@ -43,6 +40,8 @@ public class JwtTokenProvider {
     public TokenResponse createToken(Authentication authentication) {
         String accessToken = createAccessToken(authentication);
         String refreshToken = createRefreshToken(authentication);
+        log.debug("🎫 Created access token for user: {}", authentication.getName());
+        log.debug("🎫 Roles in token: {}", authentication.getAuthorities());
         return new TokenResponse(accessToken, refreshToken);
     }
 
@@ -62,12 +61,15 @@ public class JwtTokenProvider {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
+        log.debug("🔐 Creating JWT for user: {}", authentication.getName());
+        log.debug("🔐 Authorities string: {}", authorities);
+
         return Jwts.builder()
                 .setSubject(authentication.getName())
-                .claim("roles", authorities) // 모든 서비스에서 동일하게 roles 사용
+                .claim("roles", authorities)
                 .setIssuedAt(now)
                 .setExpiration(validity)
-                .signWith(key, SignatureAlgorithm.HS256) // Access/Refresh 모두 HS256
+                .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
@@ -90,9 +92,18 @@ public class JwtTokenProvider {
     public Authentication getAuthentication(String token) {
         Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
         String username = claims.getSubject();
-        List<SimpleGrantedAuthority> authorities = Stream.of(claims.get("roles").toString().split(","))
-                .map(SimpleGrantedAuthority::new)
-                .collect(Collectors.toList());
+        Object rolesClaim = claims.get("roles");
+
+        log.debug("📌 Parsed JWT subject: {}", username);
+        log.debug("📌 Parsed JWT roles claim: {}", rolesClaim);
+
+        List<SimpleGrantedAuthority> authorities = rolesClaim == null ?
+                List.of() :
+                Stream.of(rolesClaim.toString().split(","))
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
+
+        log.debug("📌 Authorities built from token: {}", authorities);
 
         return new UsernamePasswordAuthenticationToken(username, null, authorities);
     }

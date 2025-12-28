@@ -70,7 +70,7 @@ export default function () {
         if (createRes.status !== 201) {
             console.error(`Product creation failed: Status ${createRes.status}, Body: ${createRes.body}`);
         }
-        
+
         if (createRes.status === 201) {
             console.log("Create Product Response:", JSON.stringify(createRes.json(), null, 2));
             const productId = createRes.json().productId;
@@ -99,7 +99,7 @@ export default function () {
                 sectionName: "Updated Section",
                 garmentGroupName: "Updated Garment Group"
             };
-            
+
             const updateRes = http.put(`${BASE_URL}/products/${productId}`, JSON.stringify(productUpdatePayload), { headers: authHeaders });
             if (updateRes.status === 200) {
                 console.log("Update Product Response:", JSON.stringify(updateRes.json(), null, 2));
@@ -108,8 +108,8 @@ export default function () {
             }
             check(updateRes, { 'admin can update product': (r) => r.status === 200 });
 
-            // const deleteRes = http.del(`${BASE_URL}/products/${productId}`, null, { headers: authHeaders });
-            // check(deleteRes, { 'admin can delete product': (r) => r.status === 204 });
+            const deleteRes = http.del(`${BASE_URL}/products/${productId}`, null, { headers: authHeaders });
+            check(deleteRes, { 'admin can delete product': (r) => r.status === 204 });
         }
     } else {
         console.error(`Admin login failed: Status ${adminLoginRes.status}, Body: ${adminLoginRes.body}`);
