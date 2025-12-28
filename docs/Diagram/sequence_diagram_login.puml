@@ -1,0 +1,62 @@
+@startuml
+title 로그인 시퀀스 다이어그램
+
+actor 사용자
+participant "인증 컨트롤러" as Controller
+participant "인증 서비스" as Service
+participant "인증 매니저" as AuthManager
+participant "인증 리포지토리" as Repo
+database "데이터베이스" as DB
+participant "JWT 토큰 제공자" as JwtProvider
+participant "Redis 서비스" as Redis
+
+autonumber
+
+사용자 -> Controller: POST /api/v1/auth/login
+activate Controller
+
+Controller -> Service: 로그인 요청
+activate Service
+
+Service -> AuthManager: 인증 요청
+activate AuthManager
+
+' 인증 매니저가 내부적으로 UserDetailsService.loadUserByUsername 호출
+AuthManager -> Service: 사용자명으로 사용자 로드
+activate Service
+
+Service -> Repo: 사용자명으로 찾기
+activate Repo
+
+Repo -> DB: SELECT * FROM auth WHERE username=...
+activate DB
+DB --> Repo: Auth 레코드
+deactivate DB
+
+Repo --> Service: Optional<Auth>
+deactivate Repo
+
+Service --> AuthManager: UserDetails
+deactivate Service
+
+' 인증 매니저가 비밀번호 비교 후 결과 반환
+AuthManager --> Service: 인증 결과
+deactivate AuthManager
+
+Service -> JwtProvider: 토큰 생성
+activate JwtProvider
+JwtProvider --> Service: 토큰 응답
+deactivate JwtProvider
+
+Service -> Redis: 리프레시 토큰 저장
+activate Redis
+Redis --> Service: 저장 완료
+deactivate Redis
+
+Service --> Controller: 토큰 응답 반환
+deactivate Service
+
+Controller --> 사용자: 200 OK (토큰 + 리프레시 토큰 쿠키)
+deactivate Controller
+
+@enduml

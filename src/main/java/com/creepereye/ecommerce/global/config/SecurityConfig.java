@@ -55,6 +55,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/signup").permitAll()
                         .requestMatchers("/api/v1/auth/signup-admin").permitAll()
                         .requestMatchers("/api/v1/auth/logout").authenticated()
+                        .requestMatchers("/api/v1/orders/**").authenticated()
                         .requestMatchers("/api/v1/auth/refresh").permitAll()
                         .anyRequest().authenticated()
                 )

@@ -1,6 +1,9 @@
 package com.creepereye.ecommerce.domain.product.controller;
 
 
+import com.creepereye.ecommerce.domain.product.dto.ProductCreateRequestDto;
+import com.creepereye.ecommerce.domain.product.dto.ProductSearchResponseDto;
+import com.creepereye.ecommerce.domain.product.dto.ProductUpdateRequestDto;
 import com.creepereye.ecommerce.domain.product.entity.Product;
 import com.creepereye.ecommerce.domain.product.service.ProductService;
 import lombok.RequiredArgsConstructor;
@@ -32,22 +35,35 @@ public class ProductController {
         return product.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/search")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> searchProductByName(@RequestParam("keyword") String keyword,
+                                                 @RequestParam(value = "detail", required = false) boolean detail) {
+        if (detail) {
+            List<Product> products = productService.search(keyword);
+            return ResponseEntity.ok(products);
+        } else {
+            List<ProductSearchResponseDto> products = productService.searchByName(keyword);
+            return ResponseEntity.ok(products);
+        }
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Product> createProduct(@RequestBody Product product) {
-        Product savedProduct = productService.save(product);
+    public ResponseEntity<Product> createProduct(@RequestBody ProductCreateRequestDto productDto) {
+        Product savedProduct = productService.createProduct(productDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedProduct);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Product> updateProduct(@PathVariable Integer id, @RequestBody Product product) {
-        if (productService.findById(id).isEmpty()) {
+    public ResponseEntity<Product> updateProduct(@PathVariable Integer id, @RequestBody ProductUpdateRequestDto productDto) {
+        try {
+            Product updatedProduct = productService.updateProduct(id, productDto);
+            return ResponseEntity.ok(updatedProduct);
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
-        product.setProductId(id);
-        Product updatedProduct = productService.save(product);
-        return ResponseEntity.ok(updatedProduct);
     }
 
     @DeleteMapping("/{id}")

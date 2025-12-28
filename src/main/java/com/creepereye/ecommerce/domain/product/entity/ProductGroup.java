@@ -18,6 +18,9 @@ import lombok.Setter;
 public class ProductGroup {
 
     @Id
+    @Column(name = "product_group_code")
+    private Character productGroupCode;
+
     @Column(name = "product_group_name")
     private String productGroupName;
 }
