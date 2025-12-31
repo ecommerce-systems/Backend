@@ -1,50 +1,101 @@
-version: '3.8'
+version: "3.8"
 
 services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ecommerce
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    command: postgres -c max_connections=150
+    networks:
+      - ecommerce
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    networks:
+      - ecommerce
+  prometheus:
+    image: prom/prometheus:v2.28.1
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    networks:
+      - ecommerce
+  grafana:
+    image: grafana/grafana:8.1.2
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: password
+    volumes:
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    networks:
+      - ecommerce
   backend:
-    image: ecommerce-backend:latest # Assuming your Dockerfile builds an image named ecommerce-backend
+    image: creepereye/ecommerce-backend:latest
     ports:
       - "8080:8080"
     environment:
-      # Replace with your actual database credentials
-      DB_URL: jdbc:postgresql://db:5432/ecommerce
+      DB_URL: jdbc:postgresql://postgres:5432/ecommerce
       DB_USERNAME: user
       DB_PASSWORD: password
-
-      # Replace with your actual Redis credentials
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      JWT_SECRET: d3CUfHEIRFv/e3XvZe8XlEQLSZY3hOkb017Cjq13v7E=
+      JWT_ACCESS_TOKEN_VALIDITY: 3600
+      JWT_REFRESH_TOKEN_VALIDITY: 86400
+      SPRING_APPLICATION_NAME: backend
 
-      # IMPORTANT: Replace with a strong, base64-encoded secret key
-      # You can generate one using: echo "your-secret-key-here" | base64
-      JWT_SECRET: "Y3JlZXBlcmV5ZS1lY29tbWVyY2Utc3lzdGVtLXNlY3JldC1rZXk=" 
-      JWT_ACCESS_TOKEN_VALIDITY: 3600 # 1 hour
-      JWT_REFRESH_TOKEN_VALIDITY: 604800 # 7 days
+    networks:
+      - ecommerce
     depends_on:
-      - db
+      - postgres
       - redis
-    networks:
-      - ecommerce-network
 
-  db:
-    image: postgres:13
-    environment:
-      POSTGRES_DB: ecommerce
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    networks:
-      - ecommerce-network
-
-  redis:
-    image: redis:6.2-alpine
-    networks:
-      - ecommerce-network
-
-networks:
-  ecommerce-network:
-    driver: bridge
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 5s
+        max_failure_ratio: 0.2
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
 volumes:
-  db_data:
+  postgres_data:
+
+
+
+networks:
+  ecommerce:
