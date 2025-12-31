@@ -70,7 +70,7 @@ services:
       SPRING_APPLICATION_NAME: backend
 
     volumes:
-      - /home/smalllab/Docker/ecommerce/images:/app/images
+      - /home/smalllab/Docker/ecommerce/nginx/images:/app/images
 
     networks:
       - ecommerce
