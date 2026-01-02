@@ -97,8 +97,6 @@ services:
 volumes:
   postgres_data:
 
-
-
 networks:
   ecommerce:
     external: true
