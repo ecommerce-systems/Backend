@@ -101,4 +101,5 @@ volumes:
 
 networks:
   ecommerce:
+    external: true
 
