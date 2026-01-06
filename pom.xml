@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.4.12</version>
+		<version>3.3.0</version>
 		<relativePath/>
 	</parent>
 	<groupId>com.creepereye</groupId>
@@ -28,7 +28,7 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
-		<springdoc-openapi.version>2.8.14</springdoc-openapi.version>
+		<springdoc-openapi.version>2.6.0</springdoc-openapi.version>
 		<querydsl.version>5.1.0</querydsl.version>
 	</properties>
 	<dependencies>
@@ -135,17 +135,21 @@
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>com.mysema.maven</groupId>
-				<artifactId>apt-maven-plugin</artifactId>
-				<version>1.1.3</version>
+				<groupId>org.bsc.maven</groupId>
+				<artifactId>maven-processor-plugin</artifactId>
+				<version>3.3.3</version>
 				<executions>
 					<execution>
+						<id>process</id>
 						<goals>
 							<goal>process</goal>
 						</goals>
+						<phase>generate-sources</phase>
 						<configuration>
+							<processors>
+								<processor>com.querydsl.apt.jpa.JPAAnnotationProcessor</processor>
+							</processors>
 							<outputDirectory>target/generated-sources/java</outputDirectory>
-							<processor>com.querydsl.apt.jpa.JPAAnnotationProcessor</processor>
 						</configuration>
 					</execution>
 				</executions>
@@ -172,5 +176,17 @@
 			</plugin>
 		</plugins>
 	</build>
+	<repositories>
+		<repository>
+			<id>spring-releases</id>
+			<url>https://repo.spring.io/libs-release</url>
+		</repository>
+	</repositories>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>spring-releases</id>
+			<url>https://repo.spring.io/libs-release</url>
+		</pluginRepository>
+	</pluginRepositories>
 
 </project>
