@@ -19,20 +19,7 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Configure Maven Central mirror
-        run: |
-          mkdir -p ~/.m2
-          cat > ~/.m2/settings.xml <<EOF
-          <settings>
-            <mirrors>
-              <mirror>
-                <id>central</id>
-                <mirrorOf>central</mirrorOf>
-                <url>https://repo.maven.apache.org/maven2</url>
-              </mirror>
-            </mirrors>
-          </settings>
-          EOF
+
 
       - name: Build with Maven
         run: mvn -B package --file pom.xml
