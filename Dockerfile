@@ -8,6 +8,7 @@ COPY src ./src
 RUN mvn clean package -Dmaven.test.skip=true
 
 
+
 FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 COPY --from=build /app/target/ecommerce-0.0.1-SNAPSHOT.jar app.jar
