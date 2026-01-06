@@ -132,49 +132,116 @@
         </dependency>
 	</dependencies>
 
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.bsc.maven</groupId>
-				<artifactId>maven-processor-plugin</artifactId>
-				<version>3.3.3</version>
-				<executions>
-					<execution>
-						<id>process</id>
-						<goals>
-							<goal>process</goal>
-						</goals>
-						<phase>generate-sources</phase>
-						<configuration>
-							<processors>
-								<processor>com.querydsl.apt.jpa.JPAAnnotationProcessor</processor>
-							</processors>
-							<outputDirectory>target/generated-sources/java</outputDirectory>
-						</configuration>
-					</execution>
-				</executions>
-				<dependencies>
-					<dependency>
-						<groupId>com.querydsl</groupId>
-						<artifactId>querydsl-apt</artifactId>
-						<version>${querydsl.version}</version>
-						<classifier>jakarta</classifier>
-					</dependency>
-				</dependencies>
-			</plugin>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
-					<excludes>
-						<exclude>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</exclude>
-					</excludes>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
+		<build>
 
-</project>
+			<plugins>
+
+				<plugin>
+
+					<groupId>org.bsc.maven</groupId>
+
+					<artifactId>maven-processor-plugin</artifactId>
+
+					<version>3.3.3</version>
+
+					<executions>
+
+						<execution>
+
+							<id>process</id>
+
+							<goals>
+
+								<goal>process</goal>
+
+							</goals>
+
+							<phase>generate-sources</phase>
+
+							<configuration>
+
+								<processors>
+
+									<processor>com.querydsl.apt.jpa.JPAAnnotationProcessor</processor>
+
+								</processors>
+
+								<outputDirectory>target/generated-sources/java</outputDirectory>
+
+							</configuration>
+
+						</execution>
+
+					</executions>
+
+					<dependencies>
+
+						<dependency>
+
+							<groupId>com.querydsl</groupId>
+
+							<artifactId>querydsl-apt</artifactId>
+
+							<version>${querydsl.version}</version>
+
+							<classifier>jakarta</classifier>
+
+						</dependency>
+
+					</dependencies>
+
+				</plugin>
+
+				<plugin>
+
+					<groupId>org.springframework.boot</groupId>
+
+					<artifactId>spring-boot-maven-plugin</artifactId>
+
+					<configuration>
+
+						<excludes>
+
+							<exclude>
+
+								<groupId>org.projectlombok</groupId>
+
+								<artifactId>lombok</artifactId>
+
+							</exclude>
+
+						</excludes>
+
+					</configuration>
+
+				</plugin>
+
+			</plugins>
+
+		</build>
+
+		<repositories>
+
+			<repository>
+
+				<id>spring-releases</id>
+
+				<url>http://repo.spring.io/release</url>
+
+			</repository>
+
+		</repositories>
+
+		<pluginRepositories>
+
+			<pluginRepository>
+
+				<id>spring-releases</id>
+
+				<url>http://repo.spring.io/release</url>
+
+			</pluginRepository>
+
+		</pluginRepositories>
+
+	</project>
