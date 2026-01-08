@@ -4,7 +4,7 @@ import com.creepereye.ecommerce.domain.auth.dto.LoginRequest;
 import com.creepereye.ecommerce.domain.auth.dto.PasswordChangeRequest;
 import com.creepereye.ecommerce.domain.auth.dto.SignUpRequest;
 import com.creepereye.ecommerce.domain.auth.dto.TokenResponse;
-import com.creepereye.ecommerce.domain.auth.service.AuthService;
+import com.creepereye.ecommerce.domain.auth.service.AuthServiceV2;
 import com.creepereye.ecommerce.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,11 +15,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/api/v2/auth")
 @RequiredArgsConstructor
-public class AuthController {
+public class AuthControllerV2 {
 
-    private final AuthService authService;
+    private final AuthServiceV2 authService;
     private final UserService userService;
 
     @Value("${jwt.refresh-token-validity-in-seconds}")
@@ -45,7 +45,7 @@ public class AuthController {
                 .httpOnly(true)
                 .secure(true)
                 .sameSite("Lax")
-                .path("/api/v1/auth/refresh")
+                .path("/api/v2/auth/refresh")
                 .maxAge(refreshTokenValidityInSeconds)
                 .build();
 

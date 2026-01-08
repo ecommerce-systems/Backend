@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
-public class AuthService implements UserDetailsService {
+public class AuthServiceV2 {
 
     private final AuthRepository authRepository;
     private final JwtTokenProvider jwtTokenProvider;
@@ -114,18 +114,5 @@ public class AuthService implements UserDetailsService {
             return ((UserDetails) principal).getUsername();
         }
         return principal.toString();
-    }
-
-
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Auth auth = authRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
-
-        return org.springframework.security.core.userdetails.User.builder()
-                .username(auth.getUsername())
-                .password(auth.getPassword())
-                .roles(auth.getRoles().toArray(new String[0]))
-                .build();
     }
 }

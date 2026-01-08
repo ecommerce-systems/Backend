@@ -55,7 +55,7 @@ services:
     networks:
       - ecommerce
   backend:
-    image: creepereye/ecommerce-backend:latest
+    image: ecommerce-backend:latest
     ports:
       - "8080:8080"
     environment:
@@ -94,8 +94,6 @@ services:
 
 volumes:
   postgres_data:
-
-
 
 networks:
   ecommerce:

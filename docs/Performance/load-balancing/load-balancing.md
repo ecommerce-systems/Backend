@@ -46,9 +46,10 @@
 ---
 
 ![성능 비교 그래프](graph.png)  
-![단일 인스턴스 결과](single-instance.png)  
 
 # 단일 인스턴스 결과
+![단일 인스턴스 결과](single-instance.png)
+
 ```bash 
 checks_total.......: 1600    125.764707/s
 checks_succeeded...: 100.00% 1600 out of 1600
