@@ -6,16 +6,31 @@ export let options = {
     duration: '10s',
 };
 
-const BASE_URL = 'http://localhost:8080/api/v1';
+const VERSION = __ENV.VERSION || 'v1'; // Default to v1, can be set to 'v2'
+const BASE_URL = 'http://localhost:8080/api';
+
+// Auth endpoints (Assuming we want to use the same version for Auth, or fallback to v1 if v2 auth is unstable/different)
+const AUTH_URL = `${BASE_URL}/${VERSION}/auth`;
+
+// Product Write Endpoints (Always v1 as v2 is read-only)
+const PRODUCT_WRITE_URL = `${BASE_URL}/v1/products`;
+
+// Product Read Endpoints (Follows the requested version)
+const PRODUCT_READ_URL = `${BASE_URL}/${VERSION}/products`;
+
+console.log(`Running Product Test with Version: ${VERSION}`);
+console.log(`Auth URL: ${AUTH_URL}`);
+console.log(`Product Write URL: ${PRODUCT_WRITE_URL}`);
+console.log(`Product Read URL: ${PRODUCT_READ_URL}`);
 
 function signup(username, password, name, isAdmin = false) {
-    const endpoint = isAdmin ? '/auth/signup-admin' : '/auth/signup';
+    const endpoint = isAdmin ? '/signup-admin' : '/signup';
     const signUpRequest = {
         username: username,
         password: password,
         name: name,
     };
-    const signupRes = http.post(`${BASE_URL}${endpoint}`, JSON.stringify(signUpRequest), {
+    const signupRes = http.post(`${AUTH_URL}${endpoint}`, JSON.stringify(signUpRequest), {
         headers: { 'Content-Type': 'application/json' },
     });
     return signupRes;
@@ -23,7 +38,7 @@ function signup(username, password, name, isAdmin = false) {
 
 function login(username, password) {
     const credentials = { username: username, password: password };
-    const loginRes = http.post(`${BASE_URL}/auth/login`, JSON.stringify(credentials), {
+    const loginRes = http.post(`${AUTH_URL}/login`, JSON.stringify(credentials), {
         headers: { 'Content-Type': 'application/json' },
     });
     return loginRes;
@@ -31,13 +46,12 @@ function login(username, password) {
 
 export default function () {
     // Admin user scenario
-    const adminUsername = `adminuser${__VU}_${Date.now()}`;
+    const adminUsername = `adminuser${__VU}_${Date.now()}_${VERSION}`;
     const adminPassword = 'password';
     const adminName = `Admin User ${__VU}`;
 
     const adminSignupRes = signup(adminUsername, adminPassword, adminName, true);
     check(adminSignupRes, { 'admin signup successful': (r) => r.status === 200 || r.status === 201 });
-    // Removed sleep(1)
 
     const adminLoginRes = login(adminUsername, adminPassword);
     check(adminLoginRes, { 'admin login successful': (r) => r.status === 200 });
@@ -45,9 +59,7 @@ export default function () {
     if (adminLoginRes.status === 200) {
         const adminAccessToken = adminLoginRes.json('accessToken');
         const authHeaders = { 'Authorization': `Bearer ${adminAccessToken}`, 'Content-Type': 'application/json' };
-        console.log(`Admin Access Token: ${adminAccessToken}`);
-        console.log(`Auth Headers for Product Create/Update: ${JSON.stringify(authHeaders)}`);
-
+        
         const productPayload = {
             productCode: 12345,
             prodName: "K6 Test Product",
@@ -65,22 +77,27 @@ export default function () {
             detailDesc: "Created by k6",
             price: 100.0
         };
-        const createRes = http.post(`${BASE_URL}/products`, JSON.stringify(productPayload), { headers: authHeaders });
+        
+        // Create - Always V1
+        const createRes = http.post(`${PRODUCT_WRITE_URL}`, JSON.stringify(productPayload), { headers: authHeaders });
         check(createRes, { 'admin can create product': (r) => r.status === 201 });
+        
         if (createRes.status !== 201) {
             console.error(`Product creation failed: Status ${createRes.status}, Body: ${createRes.body}`);
         }
 
         if (createRes.status === 201) {
-            console.log("Create Product Response:", JSON.stringify(createRes.json(), null, 2));
             const productId = createRes.json().productId;
 
-            const getRes = http.get(`${BASE_URL}/products/${productId}`, { headers: authHeaders });
-            check(getRes, { 'admin can read product': (r) => r.status === 200 });
+            // Read - V1 or V2
+            const getRes = http.get(`${PRODUCT_READ_URL}/${productId}`, { headers: authHeaders });
+            check(getRes, { [`admin can read product (${VERSION})`]: (r) => r.status === 200 });
+            
             if (getRes.status !== 200) {
                 console.error(`Product read failed: Status ${getRes.status}, Body: ${getRes.body}`);
             }
 
+            // Update - Always V1
             const productUpdatePayload = {
                 productId: productId,
                 productCode: 54321,
@@ -100,15 +117,11 @@ export default function () {
                 garmentGroupName: "Updated Garment Group"
             };
 
-            const updateRes = http.put(`${BASE_URL}/products/${productId}`, JSON.stringify(productUpdatePayload), { headers: authHeaders });
-            if (updateRes.status === 200) {
-                console.log("Update Product Response:", JSON.stringify(updateRes.json(), null, 2));
-            } else {
-                console.error(`Update Product Failed: Status ${updateRes.status}, Body: ${updateRes.body}`);
-            }
+            const updateRes = http.put(`${PRODUCT_WRITE_URL}/${productId}`, JSON.stringify(productUpdatePayload), { headers: authHeaders });
             check(updateRes, { 'admin can update product': (r) => r.status === 200 });
 
-            const deleteRes = http.del(`${BASE_URL}/products/${productId}`, null, { headers: authHeaders });
+            // Delete - Always V1
+            const deleteRes = http.del(`${PRODUCT_WRITE_URL}/${productId}`, null, { headers: authHeaders });
             check(deleteRes, { 'admin can delete product': (r) => r.status === 204 });
         }
     } else {
@@ -117,7 +130,8 @@ export default function () {
     sleep(1);
 
 
-    const userUsername = `testuser${__VU}_${Date.now()}`;
+    // User Scenario
+    const userUsername = `testuser${__VU}_${Date.now()}_${VERSION}`;
     const userPassword = 'password';
     const userName = `Test User ${__VU}`;
 
@@ -133,18 +147,21 @@ export default function () {
         const userAuthHeaders = { 'Authorization': `Bearer ${userAccessToken}`, 'Content-Type': 'application/json' };
 
 
+        // Create Attempt - Always V1 URL to check permissions
         const productPayload = { prodName: "K6 Test Product", detailDesc: "Created by k6" };
-        const createAttemptRes = http.post(`${BASE_URL}/products`, JSON.stringify(productPayload), { headers: userAuthHeaders });
+        const createAttemptRes = http.post(`${PRODUCT_WRITE_URL}`, JSON.stringify(productPayload), { headers: userAuthHeaders });
         check(createAttemptRes, { 'user cannot create product': (r) => r.status === 403 });
 
+        // Read All - Only V1 supports this
+        if (VERSION === 'v1') {
+            const getAllRes = http.get(`${PRODUCT_READ_URL}`, { headers: userAuthHeaders });
+            check(getAllRes, { 'user can read products': (r) => r.status === 200 });
+        }
 
-
-        const getAllRes = http.get(`${BASE_URL}/products`, { headers: userAuthHeaders });
-        check(getAllRes, { 'user can read products': (r) => r.status === 200 });
-
-        const searchRes = http.get(`${BASE_URL}/products/search?keyword=Test`, { headers: userAuthHeaders });
+        // Search - V1 and V2 support this
+        const searchRes = http.get(`${PRODUCT_READ_URL}/search?keyword=Test`, { headers: userAuthHeaders });
         check(searchRes, {
-            'user can search for products': (r) => r.status === 200,
+            [`user can search for products (${VERSION})`]: (r) => r.status === 200,
             'search results are an array': (r) => r.json() && Array.isArray(r.json()),
         });
     }

@@ -517,7 +517,7 @@ public class ProductService {
         // For demonstration, let's assume we want "Containing" but on the denormalized table
         // Note: Standard B-Tree index on 'prodName' optimizes 'Starts With' (prefix), not 'Containing' (infix).
         // However, avoiding joins makes this faster regardless.
-        return productSearchRepository.findByProdNameContainingIgnoreCase(keyword);
+        return productSearchRepository.findTop20ByProdNameContainingIgnoreCase(keyword);
     }
 
     public List<ProductSearchResponseDto> searchByNameV2(String keyword) {
