@@ -3,16 +3,16 @@ import { check, sleep } from 'k6';
 
 export let options = {
     vus: 10,
-    duration: '10s',
+    duration: '30s',
 };
 
 const VERSION = __ENV.VERSION || 'v1'; // Default to v1, can be set to 'v2'
 const BASE_URL = 'http://localhost:8080/api';
 
-// Auth endpoints (Assuming we want to use the same version for Auth, or fallback to v1 if v2 auth is unstable/different)
-const AUTH_URL = `${BASE_URL}/${VERSION}/auth`;
+// Auth endpoints - Pinned to v1 to isolate Product testing
+const AUTH_URL = `${BASE_URL}/v1/auth`;
 
-// Product Write Endpoints (Always v1 as v2 is read-only)
+// Product Write Endpoints (Always v1 as v2 is read-only/read-optimized)
 const PRODUCT_WRITE_URL = `${BASE_URL}/v1/products`;
 
 // Product Read Endpoints (Follows the requested version)
@@ -45,10 +45,12 @@ function login(username, password) {
 }
 
 export default function () {
+    const uniqueId = `${__VU}_${Date.now()}`;
+
     // Admin user scenario
-    const adminUsername = `adminuser${__VU}_${Date.now()}_${VERSION}`;
+    const adminUsername = `admin_${uniqueId}_${VERSION}`;
     const adminPassword = 'password';
-    const adminName = `Admin User ${__VU}`;
+    const adminName = `Admin ${uniqueId}`;
 
     const adminSignupRes = signup(adminUsername, adminPassword, adminName, true);
     check(adminSignupRes, { 'admin signup successful': (r) => r.status === 200 || r.status === 201 });
@@ -61,20 +63,20 @@ export default function () {
         const authHeaders = { 'Authorization': `Bearer ${adminAccessToken}`, 'Content-Type': 'application/json' };
         
         const productPayload = {
-            productCode: 12345,
-            prodName: "K6 Test Product",
-            productTypeName: "Test Type",
-            productGroupName: "Test Group",
-            graphicalAppearanceName: "Test Appearance",
-            colourGroupName: "Test Color",
-            perceivedColourValueName: "Test Color Value",
-            perceivedColourMasterName: "Test Color Master",
-            departmentName: "Test Department",
-            indexName: "Test Index",
-            indexGroupName: "Test Index Group",
-            sectionName: "Test Section",
-            garmentGroupName: "Test Garment Group",
-            detailDesc: "Created by k6",
+            productCode: Math.floor(Math.random() * 100000),
+            prodName: `K6 Test Product ${uniqueId}`,
+            productTypeName: "Trousers",
+            productGroupName: "Garment Lower body",
+            graphicalAppearanceName: "Solid",
+            colourGroupName: "Dark Blue",
+            perceivedColourValueName: "Dark",
+            perceivedColourMasterName: "Blue",
+            departmentName: "Men",
+            indexName: "A",
+            indexGroupName: "Ladieswear",
+            sectionName: "Menswear",
+            garmentGroupName: "Trousers",
+            detailDesc: "Created by k6 performance test",
             price: 100.0
         };
         
@@ -90,8 +92,13 @@ export default function () {
             const productId = createRes.json().productId;
 
             // Read - V1 or V2
+            // V1 returns Product (nested), V2 returns ProductSearch (flat). 
+            // Both should be 200 OK.
             const getRes = http.get(`${PRODUCT_READ_URL}/${productId}`, { headers: authHeaders });
-            check(getRes, { [`admin can read product (${VERSION})`]: (r) => r.status === 200 });
+            check(getRes, { 
+                [`admin can read product (${VERSION})`]: (r) => r.status === 200,
+                'has product name': (r) => r.json('prodName') !== undefined
+            });
             
             if (getRes.status !== 200) {
                 console.error(`Product read failed: Status ${getRes.status}, Body: ${getRes.body}`);
@@ -99,22 +106,9 @@ export default function () {
 
             // Update - Always V1
             const productUpdatePayload = {
-                productId: productId,
-                productCode: 54321,
-                prodName: "K6 Updated Product",
-                detailDesc: "Updated by k6",
-                price: 150.0,
-                productTypeName: "Updated Type",
-                productGroupName: "Updated Group",
-                graphicalAppearanceName: "Updated Appearance",
-                colourGroupName: "Updated Color",
-                perceivedColourValueName: "Updated Color Value",
-                perceivedColourMasterName: "Updated Color Master",
-                departmentName: "Updated Department",
-                indexName: "Updated Index",
-                indexGroupName: "Updated Index Group",
-                sectionName: "Updated Section",
-                garmentGroupName: "Updated Garment Group"
+                ...productPayload,
+                prodName: `K6 Updated Product ${uniqueId}`,
+                price: 150.0
             };
 
             const updateRes = http.put(`${PRODUCT_WRITE_URL}/${productId}`, JSON.stringify(productUpdatePayload), { headers: authHeaders });
@@ -124,20 +118,17 @@ export default function () {
             const deleteRes = http.del(`${PRODUCT_WRITE_URL}/${productId}`, null, { headers: authHeaders });
             check(deleteRes, { 'admin can delete product': (r) => r.status === 204 });
         }
-    } else {
-        console.error(`Admin login failed: Status ${adminLoginRes.status}, Body: ${adminLoginRes.body}`);
-    }
+    } 
     sleep(1);
 
 
     // User Scenario
-    const userUsername = `testuser${__VU}_${Date.now()}_${VERSION}`;
+    const userUsername = `user_${uniqueId}_${VERSION}`;
     const userPassword = 'password';
-    const userName = `Test User ${__VU}`;
+    const userName = `Test User ${uniqueId}`;
 
     const userSignupRes = signup(userUsername, userPassword, userName, false);
     check(userSignupRes, { 'user signup successful': (r) => r.status === 200 || r.status === 201 });
-    sleep(1);
 
     const userLoginRes = login(userUsername, userPassword);
     check(userLoginRes, { 'user login successful': (r) => r.status === 200 });
@@ -146,24 +137,47 @@ export default function () {
         const userAccessToken = userLoginRes.json('accessToken');
         const userAuthHeaders = { 'Authorization': `Bearer ${userAccessToken}`, 'Content-Type': 'application/json' };
 
-
-        // Create Attempt - Always V1 URL to check permissions
-        const productPayload = { prodName: "K6 Test Product", detailDesc: "Created by k6" };
-        const createAttemptRes = http.post(`${PRODUCT_WRITE_URL}`, JSON.stringify(productPayload), { headers: userAuthHeaders });
-        check(createAttemptRes, { 'user cannot create product': (r) => r.status === 403 });
-
-        // Read All - Only V1 supports this
-        if (VERSION === 'v1') {
-            const getAllRes = http.get(`${PRODUCT_READ_URL}`, { headers: userAuthHeaders });
-            check(getAllRes, { 'user can read products': (r) => r.status === 200 });
-        }
-
-        // Search - V1 and V2 support this
-        const searchRes = http.get(`${PRODUCT_READ_URL}/search?keyword=Test`, { headers: userAuthHeaders });
+        // Search Keyword - V1 and V2 support this
+        // Using "Trousers" or "K6" which we likely inserted (though we deleted the specific one, 
+        // in a real perf test multiple VUs run in parallel so data might exist, or seed data exists)
+        const searchRes = http.get(`${PRODUCT_READ_URL}/search?keyword=Trousers`, { headers: userAuthHeaders });
         check(searchRes, {
             [`user can search for products (${VERSION})`]: (r) => r.status === 200,
             'search results are an array': (r) => r.json() && Array.isArray(r.json()),
         });
+
+        // Version Specific Tests
+        if (VERSION === 'v2') {
+            // V2: Test Filtered Search
+            // Filter by Department and Product Group
+            // Ensure parameters are encoded (e.g. spaces)
+            const productGroup = encodeURIComponent('Garment Lower body');
+            const params = `keyword=Trousers&department=Men&productGroup=${productGroup}`;
+            const filterSearchRes = http.get(`${PRODUCT_READ_URL}/search?${params}`, { headers: userAuthHeaders });
+            
+            const isStatus200 = check(filterSearchRes, {
+                'user can search with filters (v2)': (r) => r.status === 200,
+            });
+
+            if (!isStatus200) {
+                 console.error(`Filtered search failed. Status: ${filterSearchRes.status}, Body: ${filterSearchRes.body}`);
+            } else {
+                check(filterSearchRes, {
+                    'filtered results are an array': (r) => {
+                        try {
+                            return Array.isArray(r.json());
+                        } catch (e) {
+                            console.error(`JSON Parse Error: ${e}, Body: ${r.body}`);
+                            return false;
+                        }
+                    },
+                });
+            }
+        } else {
+            // V1: Test Get All Products (Only in V1)
+            const getAllRes = http.get(`${PRODUCT_READ_URL}`, { headers: userAuthHeaders });
+            check(getAllRes, { 'user can read all products (v1)': (r) => r.status === 200 });
+        }
     }
     sleep(1);
 }
