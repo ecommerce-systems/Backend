@@ -23,20 +23,17 @@ public class ProductController {
     private final ProductService productService;
 
     @GetMapping
-    @PreAuthorize("isAuthenticated()")
     public List<Product> getAllProducts() {
         return productService.findAll();
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Product> getProductById(@PathVariable Integer id) {
         Optional<Product> product = productService.findById(id);
         return product.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/search")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> searchProductByName(@RequestParam("keyword") String keyword,
                                                  @RequestParam(value = "detail", required = false) boolean detail) {
         if (detail) {
