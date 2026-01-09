@@ -19,6 +19,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+
 @Service
 @RequiredArgsConstructor
 public class ProductService {
@@ -26,6 +29,7 @@ public class ProductService {
     private static final Logger log = LoggerFactory.getLogger(ProductService.class);
 
     private final ProductRepository productRepository;
+    private final ProductSearchRepository productSearchRepository;
     private final ColourGroupRepository colourGroupRepository;
     private final DepartmentRepository departmentRepository;
     private final GarmentGroupRepository garmentGroupRepository;
@@ -37,6 +41,8 @@ public class ProductService {
     private final ProductGroupRepository productGroupRepository;
     private final ProductTypeRepository productTypeRepository;
     private final SectionRepository sectionRepository;
+
+
 
     public List<Product> findAll() {
         return productRepository.findAll();
@@ -68,6 +74,10 @@ public class ProductService {
                 .build();
         log.debug("Product entity built: {}", product);
         Product savedProduct = save(product);
+        
+        // V2 Sync
+        syncToSearch(savedProduct);
+        
         log.info("Product created and saved: {}", savedProduct);
         return savedProduct;
     }
@@ -101,6 +111,10 @@ public class ProductService {
 
         log.debug("💾 Saving updated product for ID: {}", id);
         Product updatedProduct = productRepository.save(existingProduct);
+        
+        // V2 Sync
+        syncToSearch(updatedProduct);
+        
         log.info("✅ Product updated and saved: {}", updatedProduct);
         return updatedProduct;
     }
@@ -120,7 +134,38 @@ public class ProductService {
         product.setSection(resolveSection(product.getSection()));
         product.setGarmentGroup(resolveGarmentGroup(product.getGarmentGroup()));
         log.debug("Categories resolved for product: {}", product.getProdName());
-        return productRepository.save(product);
+        Product saved = productRepository.save(product);
+        syncToSearch(saved);
+        return saved;
+    }
+
+    private void syncToSearch(Product product) {
+        try {
+            ProductSearch searchEntity = ProductSearch.builder()
+                    .productId(product.getProductId())
+                    .prodName(product.getProdName())
+                    .detailDesc(product.getDetailDesc())
+                    .price(product.getPrice())
+                    .imageUrl(product.getProductImage() != null ? product.getProductImage().getImageUrl() : null)
+                    .productTypeName(product.getProductType() != null ? product.getProductType().getProductTypeName() : null)
+                    .productGroupName(product.getProductGroup() != null ? product.getProductGroup().getProductGroupName() : null)
+                    .graphicalAppearanceName(product.getGraphicalAppearance() != null ? product.getGraphicalAppearance().getGraphicalAppearanceName() : null)
+                    .colourGroupName(product.getColourGroup() != null ? product.getColourGroup().getColourGroupName() : null)
+                    .perceivedColourValueName(product.getPerceivedColourValue() != null ? product.getPerceivedColourValue().getPerceivedColourValueName() : null)
+                    .perceivedColourMasterName(product.getPerceivedColourMaster() != null ? product.getPerceivedColourMaster().getPerceivedColourMasterName() : null)
+                    .departmentName(product.getDepartment() != null ? product.getDepartment().getDepartmentName() : null)
+                    .indexName(product.getIndex() != null ? product.getIndex().getIndexName() : null)
+                    .indexGroupName(product.getIndexGroup() != null ? product.getIndexGroup().getIndexGroupName() : null)
+                    .sectionName(product.getSection() != null ? product.getSection().getSectionName() : null)
+                    .garmentGroupName(product.getGarmentGroup() != null ? product.getGarmentGroup().getGarmentGroupName() : null)
+                    .build();
+            productSearchRepository.save(searchEntity);
+            log.debug("Synced product id {} to ProductSearch (V2)", product.getProductId());
+        } catch (Exception e) {
+            log.error("Failed to sync product to search entity", e);
+            // Non-blocking error for V1 flow? Or strictly transactional?
+            // Ideally strictly transactional, but for now we log.
+        }
     }
 
     private ProductType resolveProductType(ProductType incomingEntity) {
@@ -442,6 +487,7 @@ public class ProductService {
     @Transactional
     public void deleteById(Integer id) {
         productRepository.deleteById(id);
+        productSearchRepository.deleteById(id);
     }
 
     public List<Product> search(String keyword) {
@@ -452,5 +498,81 @@ public class ProductService {
         return productRepository.findTop20ByProdNameContainingIgnoreCase(keyword).stream()
                 .map(product -> new ProductSearchResponseDto(product.getProductId(), product.getProdName()))
                 .collect(Collectors.toList());
+    }
+
+    public List<String> searchNamesV1(String keyword) {
+        return productRepository.findTop20ByProdNameContainingIgnoreCase(keyword).stream()
+                .map(Product::getProdName)
+                .collect(Collectors.toList());
+    }
+
+    // V2 Search Methods
+    public Optional<ProductSearch> findByIdV2(Integer id) {
+        // Retrieves directly from the denormalized table (No Joins)
+        return productSearchRepository.findById(id);
+    }
+
+    public List<ProductSearch> searchV2(String keyword) {
+        // Use the index-friendly prefix search first, or fallback to containing
+        // For demonstration, let's assume we want "Containing" but on the denormalized table
+        // Note: Standard B-Tree index on 'prodName' optimizes 'Starts With' (prefix), not 'Containing' (infix).
+        // However, avoiding joins makes this faster regardless.
+        return productSearchRepository.findByProdNameContainingIgnoreCase(keyword);
+    }
+
+    public List<ProductSearchResponseDto> searchByNameV2(String keyword) {
+        return productSearchRepository.findTop20ByProdNameContainingIgnoreCase(keyword).stream()
+                .map(product -> new ProductSearchResponseDto(product.getProductId(), product.getProdName()))
+                .collect(Collectors.toList());
+    }
+
+    public List<String> searchNamesV2(String keyword) {
+        // 1. Try Fast Prefix Search First ("Item%")
+        List<String> results = productSearchRepository.findTop20ByProdNameStartingWithIgnoreCase(keyword).stream()
+                .map(ProductSearch::getProdName)
+                .collect(Collectors.toList());
+
+        // 2. If results are insufficient (e.g., < 5), fallback/append Contains Search ("%Item%")
+        if (results.size() < 5) {
+            List<String> fallbackResults = productSearchRepository.findTop20ByProdNameContainingIgnoreCase(keyword).stream()
+                    .map(ProductSearch::getProdName)
+                    .filter(name -> !results.contains(name)) // Avoid duplicates
+                    .collect(Collectors.toList());
+            
+            results.addAll(fallbackResults);
+        }
+        
+        return results.stream().limit(20).collect(Collectors.toList());
+    }
+
+    public List<String> searchNamesV2WithCategory(String keyword, String productTypeName) {
+        return productSearchRepository.findByProductTypeNameAndProdNameContainingIgnoreCase(productTypeName, keyword).stream()
+                .map(ProductSearch::getProdName)
+                .limit(20) // Limit consistency
+                .collect(Collectors.toList());
+    }
+
+    public List<String> searchNamesV2WithFilters(String keyword, String productType, String department, String productGroup, String section) {
+        return productSearchRepository.searchByMultipleCategories(keyword, productType, department, productGroup, section).stream()
+                .map(ProductSearch::getProdName)
+                .limit(20)
+                .collect(Collectors.toList());
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    @Transactional
+    public void syncAllProductData() {
+        if (productSearchRepository.count() == 0) {
+            log.info("🚀 Starting initial data migration for ProductSearch (V2)...");
+            List<Product> allProducts = productRepository.findAll();
+            int count = 0;
+            for (Product product : allProducts) {
+                syncToSearch(product);
+                count++;
+            }
+            log.info("✅ Migration complete. Synced {} products to ProductSearch.", count);
+        } else {
+            log.info("👌 ProductSearch data already exists. Skipping migration.");
+        }
     }
 }

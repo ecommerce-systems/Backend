@@ -2,7 +2,6 @@ package com.creepereye.ecommerce.domain.product.controller;
 
 
 import com.creepereye.ecommerce.domain.product.dto.ProductCreateRequestDto;
-import com.creepereye.ecommerce.domain.product.dto.ProductSearchResponseDto;
 import com.creepereye.ecommerce.domain.product.dto.ProductUpdateRequestDto;
 import com.creepereye.ecommerce.domain.product.entity.Product;
 import com.creepereye.ecommerce.domain.product.service.ProductService;
@@ -18,7 +17,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/v1/products")
 @RequiredArgsConstructor
-public class ProductController {
+public class ProductControllerV1 {
 
     private final ProductService productService;
 
@@ -34,15 +33,9 @@ public class ProductController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<?> searchProductByName(@RequestParam("keyword") String keyword,
-                                                 @RequestParam(value = "detail", required = false) boolean detail) {
-        if (detail) {
-            List<Product> products = productService.search(keyword);
-            return ResponseEntity.ok(products);
-        } else {
-            List<ProductSearchResponseDto> products = productService.searchByName(keyword);
-            return ResponseEntity.ok(products);
-        }
+    public ResponseEntity<List<String>> searchProductNames(@RequestParam("keyword") String keyword) {
+        // V1 (Legacy) search also updated to return only names for consistency
+        return ResponseEntity.ok(productService.searchNamesV1(keyword));
     }
 
     @PostMapping
