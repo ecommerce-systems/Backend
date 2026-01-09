@@ -57,6 +57,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/logout", "/api/v2/auth/logout").authenticated()
                         .requestMatchers("/api/v1/orders/**").authenticated()
                         .requestMatchers("/api/v1/auth/refresh", "/api/v2/auth/refresh").permitAll()
+                        .requestMatchers("/api/v1/products/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)
