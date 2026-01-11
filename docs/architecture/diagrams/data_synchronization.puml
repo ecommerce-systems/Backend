@@ -1,0 +1,50 @@
+@startuml
+participant "Client" as C
+participant "ProductService" as S
+database "Product (V1)\nTable" as V1
+database "ProductSearch (V2)\nTable" as V2
+
+== 1. Create / Update (Dual Write) ==
+C -> S : create/updateProduct()
+activate S
+S -> V1 : save(Entity)
+activate V1
+V1 --> S : Saved Entity
+deactivate V1
+
+S -> S : syncToSearch(Entity)
+activate S
+note right: Map V1 Entity -> V2 Flat Entity
+S -> V2 : save(SearchEntity)
+activate V2
+V2 --> S : Acknowledgement
+deactivate V2
+deactivate S
+
+S --> C : Response
+deactivate S
+
+== 2. Application Startup (Migration) ==
+[-> S : ApplicationReadyEvent
+activate S
+S -> V2 : count()
+activate V2
+V2 --> S : 0 (Empty)
+deactivate V2
+
+opt If V2 Table is Empty
+    S -> V1 : findAll()
+    activate V1
+    V1 --> S : List<Product> (All Data)
+    deactivate V1
+    
+    loop For each Product
+        S -> S : syncToSearch(Product)
+        activate S
+        S -> V2 : save(SearchEntity)
+        deactivate S
+    end
+end
+deactivate S
+
+@enduml
