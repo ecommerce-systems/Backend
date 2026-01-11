@@ -1,7 +1,7 @@
 package com.creepereye.ecommerce.domain.product.controller;
 
 import com.creepereye.ecommerce.domain.product.entity.ProductSearch;
-import com.creepereye.ecommerce.domain.product.service.ProductService;
+import com.creepereye.ecommerce.domain.product.service.ProductServiceV2;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,7 +13,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProductControllerV2 {
 
-    private final ProductService productService;
+    private final ProductServiceV2 productService;
 
     @GetMapping("/{id}")
     public ResponseEntity<ProductSearch> getProductById(@PathVariable Integer id) {

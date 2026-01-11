@@ -4,7 +4,7 @@ package com.creepereye.ecommerce.domain.product.controller;
 import com.creepereye.ecommerce.domain.product.dto.ProductCreateRequestDto;
 import com.creepereye.ecommerce.domain.product.dto.ProductUpdateRequestDto;
 import com.creepereye.ecommerce.domain.product.entity.Product;
-import com.creepereye.ecommerce.domain.product.service.ProductService;
+import com.creepereye.ecommerce.domain.product.service.ProductServiceV1;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +19,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ProductControllerV1 {
 
-    private final ProductService productService;
+    private final ProductServiceV1 productService;
 
     @GetMapping
     public List<Product> getAllProducts() {
