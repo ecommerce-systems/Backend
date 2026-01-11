@@ -11,8 +11,6 @@ import com.creepereye.ecommerce.domain.copurchase.repository.CoPurchaseRepositor
 import com.creepereye.ecommerce.domain.product.repository.ProductRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,13 +22,12 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class CoPurchaseService {
+public class CoPurchaseServiceV1 {
 
     private final CoPurchaseRepository coPurchaseRepository;
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
 
-    @Cacheable(value = "recommendations", key = "#productId")
     @Transactional(readOnly = true)
     public List<CoPurchaseResponse> getRecommendations(Integer productId) {
         List<CoPurchase> coPurchases = coPurchaseRepository.findBySourceProductProductIdOrderByScoreDesc(productId);
