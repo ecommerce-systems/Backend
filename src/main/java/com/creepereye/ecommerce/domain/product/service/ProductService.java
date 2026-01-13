@@ -75,9 +75,6 @@ public class ProductService {
         log.debug("Product entity built: {}", product);
         Product savedProduct = save(product);
         
-        // V2 Sync
-        syncToSearch(savedProduct);
-        
         log.info("Product created and saved: {}", savedProduct);
         return savedProduct;
     }
