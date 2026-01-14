@@ -2,7 +2,6 @@ import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Trend } from 'k6/metrics';
 
-// Custom metrics to compare search performance
 const searchTrendV1 = new Trend('search_duration_v1');
 const searchTrendV2 = new Trend('search_duration_v2');
 
@@ -11,7 +10,7 @@ export let options = {
         v1_product: {
             executor: 'constant-vus',
             exec: 'testProductV1',
-            vus: 50, // Reduced VUs for product test to avoid overwhelming DB write
+            vus: 50,
             duration: '20s',
         },
         v2_product: {
@@ -19,7 +18,7 @@ export let options = {
             exec: 'testProductV2',
             vus: 50,
             duration: '20s',
-            startTime: '22s', // Start after V1 finishes
+            startTime: '22s',
         },
     },
 };
@@ -43,11 +42,10 @@ function login(baseUrl, username, password) {
 
 function runProductFlow(version) {
     const uniqueId = `${__VU}_${Date.now()}_${Math.random()}`;
-    const authUrl = `${BASE_URL}/${version}`; // Auth is versioned
-    const productWriteUrl = `${BASE_URL}/v1/products`; // Write always uses V1 (DB)
-    const productReadUrl = `${BASE_URL}/${version}/products`; // Read uses specific version
+    const authUrl = `${BASE_URL}/${version}`;
+    const productWriteUrl = `${BASE_URL}/v1/products`;
+    const productReadUrl = `${BASE_URL}/${version}/products`;
 
-    // --- Admin Scenario: Create Product ---
     const adminUsername = `admin_${uniqueId}_${version}`;
     const password = 'password';
     
@@ -87,7 +85,6 @@ function runProductFlow(version) {
 
     sleep(1);
 
-    // --- User Scenario: Search Product ---
     const userUsername = `user_${uniqueId}_${version}`;
     signup(authUrl, userUsername, password, `User ${uniqueId}`, false);
     const userLoginRes = login(authUrl, userUsername, password);
@@ -96,11 +93,9 @@ function runProductFlow(version) {
         const userAccessToken = userLoginRes.json('accessToken');
         const userAuthHeaders = { 'Authorization': `Bearer ${userAccessToken}`, 'Content-Type': 'application/json' };
 
-        // Random keywords to minimize DB caching and simulate real traffic
         const keywords = ['Trousers', 'Shirt', 'Dress', 'Shoes', 'Denim', 'Jacket', 'Blue', 'Black', 'Casual', 'Formal'];
         const randomKeyword = keywords[Math.floor(Math.random() * keywords.length)];
 
-        // Measure Search Performance
         const searchStartTime = new Date();
         const searchRes = http.get(`${productReadUrl}/search?keyword=${randomKeyword}`, { headers: userAuthHeaders });
         const searchEndTime = new Date();
@@ -110,14 +105,12 @@ function runProductFlow(version) {
             'search results array': (r) => r.json() && Array.isArray(r.json())
         });
 
-        // Record metrics
         if (version === 'v1') {
             searchTrendV1.add(searchEndTime - searchStartTime);
         } else {
             searchTrendV2.add(searchEndTime - searchStartTime);
         }
 
-        // V2 Specific: Filtered Search (Redis secondary index test if implemented)
         if (version === 'v2') {
             const productGroup = encodeURIComponent('Garment Lower body');
             const params = `keyword=${randomKeyword}&department=Men&productGroup=${productGroup}`;
@@ -133,7 +126,6 @@ function runProductFlow(version) {
 
     sleep(1);
     
-    // Clean up (Optional, but good for keeping DB clean)
     if (productId) {
         http.del(`${productWriteUrl}/${productId}`, null, { headers: authHeaders });
     }

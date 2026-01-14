@@ -1,0 +1,36 @@
+@startuml
+package "공동 구매 (CoPurchase) 도메인" {
+
+    class CoPurchase {
+        - Long id
+        - Product sourceProduct
+        - Product targetProduct
+        - Float score
+    }
+
+    interface CoPurchaseRepository {
+        + findBySourceProductProductIdOrderByScoreDesc(Integer): List<CoPurchase>
+    }
+
+    class CoPurchaseService {
+        + getRecommendations(Integer): List<CoPurchaseResponse>
+        + createCoPurchase(CoPurchaseCreateRequest): void
+        + populateCoPurchaseData(): void
+    }
+
+    class CoPurchaseController {
+        + getRecommendations(Integer): List<CoPurchaseResponse>
+    }
+    
+    class CoPurchaseResponse {
+        - Integer productId
+        - String prodName
+        - BigDecimal price
+    }
+
+    CoPurchaseController --> CoPurchaseService
+    CoPurchaseService --> CoPurchaseRepository
+    CoPurchaseRepository ..> CoPurchase
+    CoPurchaseService ..> CoPurchaseResponse
+}
+@enduml

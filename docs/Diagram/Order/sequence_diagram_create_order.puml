@@ -1,0 +1,42 @@
+@startuml
+actor User
+participant "OrderController" as Controller
+participant "OrderService" as Service
+participant "ProductRepository" as ProdRepo
+participant "OrderRepository" as OrderRepo
+participant "DB"
+
+User -> Controller : 주문 생성 요청 (OrderRequest)
+activate Controller
+
+Controller -> Service : createOrder(request)
+activate Service
+
+Service -> Service : 현재 로그인 사용자 확인
+
+loop 요청된 아이템 리스트 순회
+    Service -> ProdRepo : findById(productId)
+    activate ProdRepo
+    ProdRepo --> Service : Product
+    deactivate ProdRepo
+    
+    alt 상품 없음 or 가격 정보 없음
+        Service -> Service : 예외 발생
+    else 정상
+        Service -> Service : OrderDetail 객체 생성 (가격 계산)
+    end
+end
+
+Service -> Service : Order 객체 생성 (PENDING 상태)
+Service -> OrderRepo : save(order)
+activate OrderRepo
+OrderRepo -> DB : INSERT Order & OrderDetails
+DB --> OrderRepo : Saved Order
+deactivate OrderRepo
+
+Service --> Controller : OrderResponse
+deactivate Service
+
+Controller --> User : 200 OK (주문 정보)
+deactivate Controller
+@enduml

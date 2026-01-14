@@ -1,0 +1,15 @@
+@startuml
+start
+:회원가입 요청 (SignUpRequest);
+if (아이디 중복 확인?) then (중복됨)
+  :에러 반환 (이미 존재하는 아이디);
+  stop
+else (사용 가능)
+  :비밀번호 암호화;
+  :Auth 엔티티 생성 (USER 권한);
+  :User 엔티티 생성;
+  :DB 저장 (Auth, User);
+  :회원가입 성공 응답;
+endif
+stop
+@enduml

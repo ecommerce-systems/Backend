@@ -47,10 +47,6 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Only set up security context for tests that need it?
-        // Or do it in @Test methods manually if not all need it.
-        // signUp does not need it. getUserInfo needs it.
-        // Let's create helper method or do it in test.
         auth = Auth.builder().username("testUser").build();
         user = User.builder().id(1L).auth(auth).build();
     }
@@ -75,7 +71,6 @@ class UserServiceTest {
     @Test
     @DisplayName("signUp should save Auth and User")
     void signUp_shouldSaveUser() {
-        // Given
         SignUpRequest request = new SignUpRequest();
         request.setUsername("testUser");
         request.setPassword("password");
@@ -86,10 +81,8 @@ class UserServiceTest {
         when(authRepository.existsByUsername("testUser")).thenReturn(false);
         when(passwordEncoder.encode("password")).thenReturn("encoded");
 
-        // When
         userService.signUp(request);
 
-        // Then
         verify(authRepository).save(any(Auth.class));
         verify(userRepository).save(any(User.class));
     }
@@ -97,7 +90,6 @@ class UserServiceTest {
     @Test
     @DisplayName("signUp should throw exception if username exists")
     void signUp_shouldThrowException_whenUsernameExists() {
-        // Given
         SignUpRequest request = new SignUpRequest();
         request.setUsername("testUser");
         request.setPassword("password");
@@ -107,7 +99,6 @@ class UserServiceTest {
 
         when(authRepository.existsByUsername("testUser")).thenReturn(true);
 
-        // When & Then
         assertThatThrownBy(() -> userService.signUp(request))
                 .isInstanceOf(IllegalArgumentException.class);
     }
@@ -115,21 +106,17 @@ class UserServiceTest {
     @Test
     @DisplayName("getUserInfo should return user info")
     void getUserInfo_shouldReturnUserInfo() {
-        // Given
         setupSecurityContext();
         when(userRepository.findByAuthUsername("testUser")).thenReturn(Optional.of(user));
 
-        // When
         UserResponse response = userService.getUserInfo();
 
-        // Then
         assertThat(response).isNotNull();
     }
 
     @Test
     @DisplayName("updateUserInfo should update fields")
     void updateUserInfo_shouldUpdateFields() {
-        // Given
         setupSecurityContext();
         UserUpdateRequest request = new UserUpdateRequest();
         request.setPhone("999");
@@ -137,10 +124,8 @@ class UserServiceTest {
 
         when(userRepository.findByAuthUsername("testUser")).thenReturn(Optional.of(user));
 
-        // When
         userService.updateUserInfo(request);
 
-        // Then
         assertThat(user.getPhone()).isEqualTo("999");
         verify(userRepository).save(user);
     }
@@ -148,14 +133,11 @@ class UserServiceTest {
     @Test
     @DisplayName("deleteAccount should delete user and auth")
     void deleteAccount_shouldDelete() {
-        // Given
         setupSecurityContext();
         when(userRepository.findByAuthUsername("testUser")).thenReturn(Optional.of(user));
 
-        // When
         userService.deleteAccount();
 
-        // Then
         verify(userRepository).delete(user);
         verify(authRepository).delete(auth);
     }

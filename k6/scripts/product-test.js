@@ -9,12 +9,9 @@ export let options = {
 const VERSION = __ENV.VERSION || 'v1';
 const BASE_URL = 'http://localhost:8080/api';
 
-
 const AUTH_URL = `${BASE_URL}/v1/auth`;
 
-
 const PRODUCT_WRITE_URL = `${BASE_URL}/v1/products`;
-
 
 const PRODUCT_READ_URL = `${BASE_URL}/${VERSION}/products`;
 
@@ -46,7 +43,6 @@ function login(username, password) {
 
 export default function () {
     const uniqueId = `${__VU}_${Date.now()}`;
-
 
     const adminUsername = `admin_${uniqueId}_${VERSION}`;
     const adminPassword = 'password';
@@ -80,7 +76,6 @@ export default function () {
             price: 100.0
         };
         
-
         const createRes = http.post(`${PRODUCT_WRITE_URL}`, JSON.stringify(productPayload), { headers: authHeaders });
         check(createRes, { 'admin can create product': (r) => r.status === 201 });
         
@@ -90,7 +85,6 @@ export default function () {
 
         if (createRes.status === 201) {
             const productId = createRes.json().productId;
-
 
             const getRes = http.get(`${PRODUCT_READ_URL}/${productId}`, { headers: authHeaders });
             check(getRes, { 
@@ -102,7 +96,6 @@ export default function () {
                 console.error(`Product read failed: Status ${getRes.status}, Body: ${getRes.body}`);
             }
 
-            // Update - Always V1
             const productUpdatePayload = {
                 ...productPayload,
                 prodName: `K6 Updated Product ${uniqueId}`,
@@ -112,15 +105,12 @@ export default function () {
             const updateRes = http.put(`${PRODUCT_WRITE_URL}/${productId}`, JSON.stringify(productUpdatePayload), { headers: authHeaders });
             check(updateRes, { 'admin can update product': (r) => r.status === 200 });
 
-            // Delete - Always V1
             const deleteRes = http.del(`${PRODUCT_WRITE_URL}/${productId}`, null, { headers: authHeaders });
             check(deleteRes, { 'admin can delete product': (r) => r.status === 204 });
         }
     } 
     sleep(1);
 
-
-    // User Scenario
     const userUsername = `user_${uniqueId}_${VERSION}`;
     const userPassword = 'password';
     const userName = `Test User ${uniqueId}`;
@@ -135,16 +125,13 @@ export default function () {
         const userAccessToken = userLoginRes.json('accessToken');
         const userAuthHeaders = { 'Authorization': `Bearer ${userAccessToken}`, 'Content-Type': 'application/json' };
 
-
         const searchRes = http.get(`${PRODUCT_READ_URL}/search?keyword=Trousers`, { headers: userAuthHeaders });
         check(searchRes, {
             [`user can search for products (${VERSION})`]: (r) => r.status === 200,
             'search results are an array': (r) => r.json() && Array.isArray(r.json()),
         });
 
-
         if (VERSION === 'v2') {
-
             const productGroup = encodeURIComponent('Garment Lower body');
             const params = `keyword=Trousers&department=Men&productGroup=${productGroup}`;
             const filterSearchRes = http.get(`${PRODUCT_READ_URL}/search?${params}`, { headers: userAuthHeaders });

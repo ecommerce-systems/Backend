@@ -1,0 +1,81 @@
+@startuml
+package "인증 (Auth) 도메인" {
+    
+    interface AuthRepository {
+        + findByUsername(String): Optional<Auth>
+        + existsByUsername(String): boolean
+    }
+
+    interface RefreshTokenRepository {
+        + findByToken(String): Optional<RefreshToken>
+        + findByUsername(String): Optional<RefreshToken>
+        + deleteByUsername(String): void
+    }
+
+    class Auth {
+        - Long id
+        - String username
+        - String password
+        - List<String> roles
+    }
+
+    class RefreshToken {
+        - Long id
+        - String token
+        - String username
+        - Long expiryDate
+    }
+
+    class AuthServiceV1 {
+        + login(LoginRequest): TokenResponse
+        + logout(String): void
+        + refresh(String): TokenResponse
+        + changePassword(PasswordChangeRequest): void
+    }
+
+    class AuthServiceV2 {
+        + login(LoginRequest): TokenResponse
+        + logout(String): void
+        + refresh(String): TokenResponse
+        + changePassword(PasswordChangeRequest): void
+    }
+
+    class RedisService {
+        + setValues(String, String, long, TimeUnit): void
+        + getValues(String): String
+        + deleteValues(String): void
+    }
+
+    class JwtTokenProvider {
+        + createToken(Authentication): TokenResponse
+        + validateToken(String): boolean
+        + getAuthentication(String): Authentication
+    }
+
+    class AuthControllerV1 {
+        + signup(SignUpRequest): ResponseEntity
+        + login(LoginRequest): ResponseEntity
+        + logout(String): ResponseEntity
+        + refresh(String): ResponseEntity
+    }
+
+    class AuthControllerV2 {
+        + signup(SignUpRequest): ResponseEntity
+        + login(LoginRequest): ResponseEntity
+        + logout(String): ResponseEntity
+        + refresh(String): ResponseEntity
+    }
+
+    AuthControllerV1 --> AuthServiceV1
+    AuthControllerV2 --> AuthServiceV2
+    AuthServiceV1 --> AuthRepository
+    AuthServiceV1 --> RefreshTokenRepository
+    AuthServiceV1 --> JwtTokenProvider
+    AuthServiceV2 --> AuthRepository
+    AuthServiceV2 --> RedisService
+    AuthServiceV2 --> JwtTokenProvider
+    
+    AuthRepository ..> Auth
+    RefreshTokenRepository ..> RefreshToken
+}
+@enduml

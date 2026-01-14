@@ -2,12 +2,11 @@ import http from 'k6/http';
 import { check, sleep, group } from 'k6';
 import { Trend } from 'k6/metrics';
 
-// Custom metrics to measure caching effect
 const missTrend = new Trend('copurchase_miss_duration');
 const hitTrend = new Trend('copurchase_hit_duration');
 
 export let options = {
-    vus: 5, // Low VUs to clearly see cache miss vs hit per user flow
+    vus: 5,
     duration: '30s',
 };
 
@@ -30,7 +29,7 @@ function login(username, password) {
 
 function createProduct(authHeaders, productName, price) {
     const productPayload = {
-        productCode: Math.floor(Math.random() * 100000), // Random code to avoid conflict
+        productCode: Math.floor(Math.random() * 100000),
         prodName: productName,
         detailDesc: "Created by k6 for co-purchase test",
         price: price
@@ -41,7 +40,6 @@ function createProduct(authHeaders, productName, price) {
 export default function () {
     const uniqueId = `${__VU}_${Date.now()}`;
 
-    // 1. Admin Setup: Create Products
     const adminUsername = `admin_cp_${uniqueId}`;
     const password = 'password';
     
@@ -65,7 +63,6 @@ export default function () {
 
     sleep(1);
 
-    // 2. User Setup: Create Orders to build Co-Purchase Data
     const userUsername = `user_cp_${uniqueId}`;
     signup(userUsername, password, `User ${uniqueId}`, false);
     const userLoginRes = login(userUsername, password);
@@ -74,15 +71,12 @@ export default function () {
         const userToken = userLoginRes.json('accessToken');
         const userHeaders = { 'Authorization': `Bearer ${userToken}`, 'Content-Type': 'application/json' };
 
-        // Create an order with both products to link them
         const orderPayload = { items: [{ productId: product1Id, quantity: 1 }, { productId: product2Id, quantity: 1 }] };
         const orderRes = http.post(`${BASE_URL}/orders`, JSON.stringify(orderPayload), { headers: userHeaders });
         check(orderRes, { 'order created': (r) => r.status === 200 });
 
         sleep(1); 
 
-        // 3. Measure Cache Miss vs Cache Hit
-        // First Request: Expect Cache Miss (DB Calculation)
         group('1st Request (Cache Miss)', () => {
             const start = new Date();
             const res = http.get(`${BASE_URL}/co-purchase/${product1Id}`, { headers: userHeaders });
@@ -92,9 +86,8 @@ export default function () {
             missTrend.add(end - start);
         });
 
-        sleep(0.5); // Short pause
+        sleep(0.5);
 
-        // Second Request: Expect Cache Hit (Redis)
         group('2nd Request (Cache Hit)', () => {
             const start = new Date();
             const res = http.get(`${BASE_URL}/co-purchase/${product1Id}`, { headers: userHeaders });

@@ -11,7 +11,7 @@
 | 도메인 | 최적화 기법 | Before (V1) | After (V2) | 성능 향상 | 보고서 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **인증 (Auth)** | Redis Session | 29.55ms (Err 0.6%) | **9.07ms** | **3.2배** 🚀 | [Link](docs/Performance/auth/refresh.md) |
-| **검색 (Search)** | 역정규화 (No-Join) | 101.05ms | **12.64ms** | **8배** 🚀 | [Link](docs/Performance/product-search/search-optimization.md) |
+| **검색 (Search)** | 역정규화 (No-Join) | 101.05ms | **12.64ms** | **8배** 🚀 | [Link](docs/Performance/product/search.md) |
 | **추천 (Recommend)** | 연산 결과 캐싱 | 289.34ms | **13.36ms** | **21배** 🔥 | [Link](docs/Performance/copurchase/caching.md) |
 | **인프라 (Infra)** | Scale-Out (LB) | 489ms | **406ms** | **17%** ⚡ | [Link](docs/Performance/infra/load.md) |
 

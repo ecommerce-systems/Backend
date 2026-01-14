@@ -1,0 +1,22 @@
+@startuml
+start
+:주문 요청 수신 (상품 목록, 수량);
+:로그인 사용자 식별;
+:주문 객체(Order) 생성 (상태: PENDING);
+
+while (상품 목록 순회) is (다음 상품)
+  :상품 ID로 조회;
+  if (상품 존재?) then (No)
+    :예외 발생 (상품 없음);
+    stop
+  else (Yes)
+    :주문 상세(OrderDetail) 생성;
+    :가격 계산 (단가 * 수량);
+    :주문 객체에 상세 추가;
+  endif
+endwhile
+
+:DB에 주문 저장;
+:주문 완료 응답 반환;
+stop
+@enduml

@@ -41,7 +41,6 @@ class CoPurchaseServiceTest {
     @Test
     @DisplayName("getRecommendations should return list of CoPurchaseResponse")
     void getRecommendations_shouldReturnResponseList() {
-        // Given
         int productId = 1;
         Product targetProduct = Product.builder().productId(2).prodName("Target").build();
         CoPurchase coPurchase = CoPurchase.builder()
@@ -53,10 +52,8 @@ class CoPurchaseServiceTest {
         when(coPurchaseRepository.findBySourceProductProductIdOrderByScoreDesc(productId))
                 .thenReturn(Collections.singletonList(coPurchase));
 
-        // When
         List<CoPurchaseResponse> result = coPurchaseService.getRecommendations(productId);
 
-        // Then
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getProdName()).isEqualTo("Target");
         verify(coPurchaseRepository).findBySourceProductProductIdOrderByScoreDesc(productId);
@@ -65,7 +62,6 @@ class CoPurchaseServiceTest {
     @Test
     @DisplayName("createCoPurchase should save CoPurchase")
     void createCoPurchase_shouldSaveCoPurchase() {
-        // Given
         CoPurchaseCreateRequest request = new CoPurchaseCreateRequest(1L, 2L, 5.0);
 
         Product source = Product.builder().productId(1).build();
@@ -74,22 +70,18 @@ class CoPurchaseServiceTest {
         when(productRepository.findById(1)).thenReturn(Optional.of(source));
         when(productRepository.findById(2)).thenReturn(Optional.of(target));
 
-        // When
         coPurchaseService.createCoPurchase(request);
 
-        // Then
         verify(coPurchaseRepository).save(any(CoPurchase.class));
     }
 
     @Test
     @DisplayName("createCoPurchase should throw exception when product not found")
     void createCoPurchase_shouldThrowException_whenProductNotFound() {
-        // Given
         CoPurchaseCreateRequest request = new CoPurchaseCreateRequest(1L, 2L, 5.0);
 
         when(productRepository.findById(1)).thenReturn(Optional.empty());
 
-        // When & Then
         assertThatThrownBy(() -> coPurchaseService.createCoPurchase(request))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessageContaining("Source Product not found");
@@ -98,7 +90,6 @@ class CoPurchaseServiceTest {
     @Test
     @DisplayName("populateCoPurchaseData should process orders and save CoPurchases")
     void populateCoPurchaseData_shouldProcessOrders() {
-        // Given
         Product p1 = Product.builder().productId(1).prodName("P1").build();
         Product p2 = Product.builder().productId(2).prodName("P2").build();
         Product p3 = Product.builder().productId(3).prodName("P3").build();
@@ -107,14 +98,12 @@ class CoPurchaseServiceTest {
         OrderDetail d2 = OrderDetail.builder().product(p2).build();
         OrderDetail d3 = OrderDetail.builder().product(p3).build();
 
-        // Order 1: P1, P2
         Order o1 = Order.builder().build();
         List<OrderDetail> details1 = new ArrayList<>();
         details1.add(d1);
         details1.add(d2);
-        o1.setOrderDetails(details1); // Assuming setter exists or we need to use reflection/builder if simpler
+        o1.setOrderDetails(details1);
 
-        // Order 2: P1, P3
         Order o2 = Order.builder().build();
         List<OrderDetail> details2 = new ArrayList<>();
         details2.add(d1);
@@ -123,10 +112,8 @@ class CoPurchaseServiceTest {
 
         when(orderRepository.findAll()).thenReturn(Arrays.asList(o1, o2));
 
-        // When
         coPurchaseService.populateCoPurchaseData();
 
-        // Then
         verify(coPurchaseRepository).saveAll(anyList());
     }
 }

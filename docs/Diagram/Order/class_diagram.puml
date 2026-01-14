@@ -1,0 +1,54 @@
+@startuml
+package "주문 (Order) 도메인" {
+
+    class Order {
+        - Long id
+        - LocalDateTime orderDate
+        - String status
+        - List<OrderDetail> orderDetails
+    }
+
+    class OrderDetail {
+        - Long id
+        - Integer quantity
+        - BigDecimal price
+    }
+
+    interface OrderRepository {
+        + findByUserId(Long): List<Order>
+    }
+
+    interface OrderDetailRepository {}
+
+    class OrderService {
+        + createOrder(OrderRequest): OrderResponse
+        + getMyOrders(): List<OrderResponse>
+        + getOrderById(Long): OrderResponse
+    }
+
+    class OrderController {
+        + createOrder(OrderRequest): ResponseEntity
+        + getMyOrders(): ResponseEntity
+        + getOrderById(Long): ResponseEntity
+    }
+
+    class OrderRequest {
+        - List<OrderItemRequest> items
+    }
+    
+    class OrderResponse {
+        - Long orderId
+        - String status
+        - List<OrderDetailResponse> orderDetails
+    }
+
+    OrderController --> OrderService
+    OrderService --> OrderRepository
+    OrderService --> OrderDetailRepository
+    OrderService ..> OrderRequest
+    OrderService ..> OrderResponse
+    
+    Order "1" *-- "N" OrderDetail : contains
+    OrderRepository ..> Order
+}
+@enduml

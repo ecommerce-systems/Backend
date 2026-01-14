@@ -1,0 +1,14 @@
+@startuml
+left to right direction
+actor "사용자" as User
+
+rectangle "주문 시스템 (Order System)" {
+  usecase "주문 생성" as UC_CreateOrder
+  usecase "내 주문 목록 조회" as UC_ListOrder
+  usecase "주문 상세 조회" as UC_DetailOrder
+
+  User --> UC_CreateOrder
+  User --> UC_ListOrder
+  User --> UC_DetailOrder
+}
+@enduml

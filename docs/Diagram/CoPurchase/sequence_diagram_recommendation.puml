@@ -1,0 +1,37 @@
+@startuml
+actor User
+participant "CoPurchaseController" as Controller
+participant "CoPurchaseService" as Service
+participant "CoPurchaseRepository" as Repo
+participant "Cache (Redis)" as Cache
+participant "DB"
+
+User -> Controller : 추천 상품 요청 (productId)
+activate Controller
+
+Controller -> Service : getRecommendations(productId)
+activate Service
+
+Service -> Cache : 조회 (key=recommendations:productId)
+activate Cache
+
+alt Cache Hit
+    Cache --> Service : 캐시된 데이터
+else Cache Miss
+    Service -> Repo : findBySourceProduct...
+    activate Repo
+    Repo -> DB : SELECT * FROM co_purchase ...
+    DB --> Repo : List<CoPurchase>
+    deactivate Repo
+    
+    Service -> Service : DTO 변환
+    Service -> Cache : 결과 저장 (TTL 적용)
+end
+deactivate Cache
+
+Service --> Controller : List<CoPurchaseResponse>
+deactivate Service
+
+Controller --> User : 200 OK (JSON)
+deactivate Controller
+@enduml

@@ -1,0 +1,13 @@
+@startuml
+left to right direction
+actor "사용자" as User
+actor "시스템(배치)" as System
+
+rectangle "추천 시스템 (Recommendation)" {
+  usecase "추천 상품 조회" as UC_Recommend
+  usecase "연관 상품 데이터 생성" as UC_Populate
+
+  User --> UC_Recommend
+  System --> UC_Populate
+}
+@enduml

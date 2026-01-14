@@ -1,119 +1,161 @@
 @startuml
-!theme vibrant
-title 전자상거래 도메인 엔티티
+!theme plain
+hide circle
+skinparam linetype ortho
 
-package "사용자 관리" {
-    class Auth {
-        + Long id
-        + String username
-        + String password
-        + List<String> roles
-    }
-
-    class User {
-        + Long id
-        + String name
-        + String phone
-        + String address
-        + Boolean active
-        + String clubMemberStatus
-        + String fashionNewsFrequency
-    }
+entity "Auth (인증)" as auth {
+  *id : Long <<PK>>
+  --
+  *username : String <<Unique>>
+  *password : String
+  role : List<String>
 }
 
-package "상품 카탈로그" {
-    class Product {
-        + Integer productId
-        + Integer productCode
-        + String prodName
-        + String detailDesc
-    }
-
-    class ProductType {
-        + Integer productTypeNo
-        + String productTypeName
-    }
-
-    class ProductGroup {
-        + String productGroupName
-    }
-
-    class GraphicalAppearance {
-        + Integer graphicalAppearanceNo
-        + String graphicalAppearanceName
-    }
-
-    class ColourGroup {
-        + Integer colourGroupCode
-        + String colourGroupName
-    }
-
-    class PerceivedColourValue {
-        + Integer perceivedColourValueId
-        + String perceivedColourValueName
-    }
-
-    class PerceivedColourMaster {
-        + Integer perceivedColourMasterId
-        + String perceivedColourMasterName
-    }
-
-    class Department {
-        + Integer departmentNo
-        + String departmentName
-    }
-
-    class Index {
-        + Character indexCode
-        + String indexName
-    }
-
-    class IndexGroup {
-        + Integer indexGroupNo
-        + String indexGroupName
-    }
-
-    class Section {
-        + Integer sectionNo
-        + String sectionName
-    }
-
-    class GarmentGroup {
-        + Integer garmentGroupNo
-        + String garmentGroupName
-    }
+entity "RefreshToken (리프레시 토큰)" as refresh_token {
+  *id : Long <<PK>>
+  --
+  *token : String <<Unique>>
+  *username : String
+  *expiryDate : Long
 }
 
-' === Relationships ===
-User "1" -- "1" Auth
-
-Product "N" *-- "1" ProductType
-Product "N" *-- "1" ProductGroup
-Product "N" *-- "1" GraphicalAppearance
-Product "N" *-- "1" ColourGroup
-Product "N" *-- "1" PerceivedColourValue
-Product "N" *-- "1" PerceivedColourMaster
-Product "N" *-- "1" Department
-Product "N" *-- "1" Index
-Product "N" *-- "1" IndexGroup
-Product "N" *-- "1" Section
-Product "N" *-- "1" GarmentGroup
-
-package "주문 관리" {
-    class Order {
-        + Long id
-        + LocalDateTime orderDate
-        + String status
-    }
-
-    class OrderDetail {
-        + Long id
-        + Integer quantity
-        + BigDecimal price
-    }
+entity "User (사용자)" as user_table {
+  *id : Long <<PK>>
+  --
+  *name : String
+  phone : String
+  address : String
+  active : Boolean
+  clubMemberStatus : String
+  fashionNewsFrequency : String
+  *auth_id : Long <<FK>>
 }
 
-User "1" -- "N" Order
-Order "1" -- "N" OrderDetail
-Product "1" -- "N" OrderDetail
+entity "Product (상품)" as product {
+  *product_id : Integer <<PK>>
+  --
+  *product_code : Integer
+  *prod_name : String
+  detail_desc : String
+  price : BigDecimal
+  product_type_no : Integer <<FK>>
+  product_group_code : Character <<FK>>
+  graphical_appearance_no : Integer <<FK>>
+  colour_group_code : Integer <<FK>>
+  perceived_colour_value_id : Integer <<FK>>
+  perceived_colour_master_id : Integer <<FK>>
+  department_no : Integer <<FK>>
+  index_code : Character <<FK>>
+  index_group_no : Integer <<FK>>
+  section_no : Integer <<FK>>
+  garment_group_no : Integer <<FK>>
+}
+
+entity "ProductImage (상품 이미지)" as product_image {
+  *product_id : Integer <<PK, FK>>
+  --
+  image_url : String
+}
+
+entity "ProductSearch (상품 검색 - V2)" as product_search {
+  *product_id : Integer <<PK>>
+  --
+  prod_name : String
+  detail_desc : String
+  price : BigDecimal
+  image_url : String
+  product_type_name : String
+  product_group_name : String
+  graphical_appearance_name : String
+  colour_group_name : String
+  perceived_colour_value_name : String
+  perceived_colour_master_name : String
+  department_name : String
+  index_name : String
+  index_group_name : String
+  section_name : String
+  garment_group_name : String
+}
+
+entity "Order (주문)" as order_table {
+  *id : Long <<PK>>
+  --
+  *user_id : Long <<FK>>
+  *orderDate : LocalDateTime
+  *status : String
+}
+
+entity "OrderDetail (주문 상세)" as order_detail {
+  *id : Long <<PK>>
+  --
+  *order_id : Long <<FK>>
+  *product_id : Integer <<FK>>
+  *quantity : Integer
+  *price : BigDecimal
+}
+
+entity "CoPurchase (함께 구매한 상품)" as co_purchase {
+  *id : Long <<PK>>
+  --
+  *source_product_id : Integer <<FK>>
+  *target_product_id : Integer <<FK>>
+  *score : Float
+}
+
+entity "ProductType" as pt {
+    *product_type_no: PK
+}
+entity "ProductGroup" as pg {
+    *product_group_code: PK
+}
+entity "ColourGroup" as cg {
+    *colour_group_code: PK
+}
+entity "Department" as dept {
+    *department_no: PK
+}
+entity "GarmentGroup" as gg {
+    *garment_group_no: PK
+}
+entity "GraphicalAppearance" as ga {
+    *graphical_appearance_no: PK
+}
+entity "Index" as idx {
+    *index_code: PK
+}
+entity "IndexGroup" as ig {
+    *index_group_no: PK
+}
+entity "PerceivedColourMaster" as pcm {
+    *perceived_colour_master_id: PK
+}
+entity "PerceivedColourValue" as pcv {
+    *perceived_colour_value_id: PK
+}
+entity "Section" as sec {
+    *section_no: PK
+}
+
+' Relationships
+user_table ||..|| auth : "1:1"
+user_table ||..o{ order_table : "1:N"
+order_table ||..o{ order_detail : "1:N"
+order_detail }o..|| product : "N:1"
+
+product ||..|| product_image : "1:1"
+product }o..|| pt
+product }o..|| pg
+product }o..|| cg
+product }o..|| dept
+product }o..|| gg
+product }o..|| ga
+product }o..|| idx
+product }o..|| ig
+product }o..|| pcm
+product }o..|| pcv
+product }o..|| sec
+
+co_purchase }o..|| product : "source"
+co_purchase }o..|| product : "target"
+
 @enduml

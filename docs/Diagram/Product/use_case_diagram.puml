@@ -1,0 +1,24 @@
+@startuml
+left to right direction
+actor "사용자" as User
+actor "관리자" as Admin
+
+rectangle "상품 시스템 (Product System)" {
+  usecase "상품 목록 조회" as UC_List
+  usecase "상품 상세 조회 (V1/V2)" as UC_Detail
+  usecase "상품 검색 (단순/필터)" as UC_Search
+  usecase "상품 등록" as UC_Create
+  usecase "상품 수정" as UC_Update
+  usecase "상품 삭제" as UC_Delete
+  usecase "카테고리 목록 조회" as UC_Category
+
+  User --> UC_List
+  User --> UC_Detail
+  User --> UC_Search
+  User --> UC_Category
+
+  Admin --> UC_Create
+  Admin --> UC_Update
+  Admin --> UC_Delete
+}
+@enduml

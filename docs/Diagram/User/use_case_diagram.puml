@@ -1,0 +1,14 @@
+@startuml
+left to right direction
+actor "사용자" as User
+
+rectangle "사용자 관리 (User Management)" {
+  usecase "내 정보 조회" as UC_Info
+  usecase "내 정보 수정 (전화번호, 주소)" as UC_Update
+  usecase "회원 탈퇴" as UC_Delete
+
+  User --> UC_Info
+  User --> UC_Update
+  User --> UC_Delete
+}
+@enduml

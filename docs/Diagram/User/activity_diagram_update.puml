@@ -1,0 +1,17 @@
+@startuml
+start
+:회원 탈퇴 요청;
+:현재 로그인 사용자 확인;
+
+group 트랜잭션 시작
+  :User 테이블에서 사용자 삭제;
+  :Auth 테이블에서 인증 정보 삭제;
+  note right
+    FK 제약조건에 따라 순서 중요
+    또는 Cascade 설정 확인
+  end note
+end group
+
+:성공 응답;
+stop
+@enduml

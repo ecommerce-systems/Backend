@@ -1,0 +1,20 @@
+@startuml
+start
+:데이터 생성 요청 (populateCoPurchaseData);
+:모든 주문(Order) 조회;
+:Map<Product, Map<Product, Count>> 초기화;
+
+while (주문 리스트 순회)
+  :주문 상세(Items) 가져오기;
+  while (Item A 순회)
+    while (Item B 순회 (A 이후))
+      :A-B 조합 카운트 증가;
+      :B-A 조합 카운트 증가;
+    endwhile
+  endwhile
+endwhile
+
+:Map 데이터를 CoPurchase 엔티티 리스트로 변환;
+:DB(co_purchase)에 일괄 저장 (saveAll);
+stop
+@enduml

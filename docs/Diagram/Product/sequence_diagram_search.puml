@@ -1,0 +1,32 @@
+@startuml
+actor User
+participant "ProductControllerV2" as Controller
+participant "ProductService" as Service
+participant "ProductSearchRepository" as Repo
+participant "DB (ProductSearch)" as DB
+
+User -> Controller : 검색 요청 (keyword="청바지", filters...)
+activate Controller
+
+Controller -> Service : searchNamesV2WithFilters(...)
+activate Service
+
+Service -> Repo : searchByMultipleCategories(...)
+activate Repo
+
+Repo -> DB : SELECT * FROM product_searches WHERE ...
+activate DB
+DB --> Repo : 결과 리스트 (ProductSearch Entities)
+deactivate DB
+
+Repo --> Service : List<ProductSearch>
+deactivate Repo
+
+Service -> Service : DTO 변환 및 이름 추출 (Top 20)
+
+Service --> Controller : List<String> (상품명 리스트)
+deactivate Service
+
+Controller --> User : 200 OK (JSON)
+deactivate Controller
+@enduml

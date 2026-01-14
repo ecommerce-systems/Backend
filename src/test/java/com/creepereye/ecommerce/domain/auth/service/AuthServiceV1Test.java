@@ -45,7 +45,6 @@ class AuthServiceV1Test {
     @Test
     @DisplayName("Login should save refresh token to DB")
     void login_shouldSaveTokenToDB() {
-        // Given
         LoginRequest request = new LoginRequest("user", "password");
         Authentication authentication = mock(Authentication.class);
         when(authentication.getName()).thenReturn("user");
@@ -56,17 +55,14 @@ class AuthServiceV1Test {
         when(jwtTokenProvider.createToken(authentication)).thenReturn(tokenResponse);
         when(jwtTokenProvider.getRefreshTokenValidityInSeconds()).thenReturn(3600L);
 
-        // When
         authService.login(request);
 
-        // Then
         verify(refreshTokenRepository).save(any(RefreshToken.class));
     }
     
     @Test
     @DisplayName("Refresh should validate and issue new token")
     void refresh_shouldIssueNewToken() {
-        // Given
         String refreshToken = "valid_refresh";
         String username = "user";
         Authentication authentication = mock(Authentication.class);
@@ -86,10 +82,8 @@ class AuthServiceV1Test {
         when(jwtTokenProvider.createToken(authentication)).thenReturn(newToken);
         when(jwtTokenProvider.getRefreshTokenValidityInSeconds()).thenReturn(3600L);
 
-        // When
         authService.refresh(refreshToken);
 
-        // Then
         verify(refreshTokenRepository, atLeastOnce()).save(any(RefreshToken.class));
     }
 }

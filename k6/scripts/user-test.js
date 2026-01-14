@@ -38,9 +38,7 @@ function createProduct(authHeaders, productName, price) {
     return http.post(`${BASE_URL}/products`, JSON.stringify(productPayload), { headers: authHeaders });
 }
 
-
 export default function () {
-
     const adminUsername = `admin_order_test_${__VU}_${Date.now()}`;
     const adminPassword = 'password';
     const adminName = `Admin Order User ${__VU}`;
@@ -73,7 +71,6 @@ export default function () {
         return;
     }
 
-
     const userUsername = `user_order_test_${__VU}_${Date.now()}`;
     const userPassword = 'password';
     const userName = `Order Test User ${__VU}`;
@@ -89,7 +86,6 @@ export default function () {
         const userAccessToken = userLoginRes.json('accessToken');
         const userAuthHeaders = { 'Authorization': `Bearer ${userAccessToken}`, 'Content-Type': 'application/json' };
 
-
         const orderPayload = {
             items: [{ productId: productId, quantity: 2 }]
         };
@@ -102,11 +98,9 @@ export default function () {
         sleep(1);
 
         if (orderId) {
-
             const getMyOrdersRes = http.get(`${BASE_URL}/orders`, { headers: userAuthHeaders });
             check(getMyOrdersRes, { 'user can get their orders': (r) => r.status === 200 });
             sleep(1);
-
 
             const getOrderByIdRes = http.get(`${BASE_URL}/orders/${orderId}`, { headers: userAuthHeaders });
             check(getOrderByIdRes, { 'user can get order by ID': (r) => r.status === 200 });

@@ -2,7 +2,6 @@ import http from 'k6/http';
 import { check, sleep, group } from 'k6';
 import { Trend } from 'k6/metrics';
 
-// Custom metrics to separate V1 and V2 refresh performance
 const refreshTrendV1 = new Trend('refresh_duration_v1');
 const refreshTrendV2 = new Trend('refresh_duration_v2');
 
@@ -31,26 +30,21 @@ function runRefreshFlow(baseUrl, version) {
     const username = `refresh_user_${__VU}_${Date.now()}_${Math.random()}`;
     const password = 'password123';
     
-    // 1. Signup
     http.post(`${baseUrl}/signup`, JSON.stringify({ username, password, name: "Test User" }), {
         headers: { 'Content-Type': 'application/json' },
     });
 
-    // 2. Login
     const loginRes = http.post(`${baseUrl}/login`, JSON.stringify({ username, password }), {
         headers: { 'Content-Type': 'application/json' },
     });
 
     if (loginRes.status !== 200) return;
     
-    // Extract token from Body to bypass 'Secure' cookie restriction on localhost
     const refreshToken = loginRes.json('refreshToken');
     
     sleep(1);
 
-    // 3. Refresh (Measure this ONLY)
     group('refresh stage', () => {
-        // Construct params with manual Cookie header
         const params = {
             headers: { 
                 'Content-Type': 'application/json',
@@ -59,7 +53,6 @@ function runRefreshFlow(baseUrl, version) {
         };
 
         const startTime = new Date();
-        // Send request with empty body (server ignores body, uses cookie)
         const refreshRes = http.post(`${baseUrl}/refresh`, null, params);
         const endTime = new Date();
 
@@ -69,7 +62,6 @@ function runRefreshFlow(baseUrl, version) {
             console.error(`Refresh Failed (${version}): Status ${refreshRes.status}, Body: ${refreshRes.body}`);
         }
         
-        // Record duration to specific trend
         if (version === 'v1') {
             refreshTrendV1.add(endTime - startTime);
         } else {

@@ -39,7 +39,6 @@ function createProduct(authHeaders, productName, price) {
 }
 
 export default function () {
-
     const adminUsername = `admin_copurchase_${__VU}_${Date.now()}`;
     const adminPassword = 'password';
     const adminName = `Admin Co-Purchase User ${__VU}`;
@@ -75,7 +74,6 @@ export default function () {
         return;
     }
 
-
     const userUsername = `user_copurchase_${__VU}_${Date.now()}`;
     const userPassword = 'password';
     const userName = `Co-Purchase Test User ${__VU}`;
@@ -91,18 +89,15 @@ export default function () {
         const userAccessToken = userLoginRes.json('accessToken');
         const userAuthHeaders = { 'Authorization': `Bearer ${userAccessToken}`, 'Content-Type': 'application/json' };
 
-
         const order1Payload = { items: [{ productId: product1Id, quantity: 1 }, { productId: product2Id, quantity: 1 }] };
         const createOrder1Res = http.post(`${BASE_URL}/orders`, JSON.stringify(order1Payload), { headers: userAuthHeaders });
         check(createOrder1Res, { 'user created order with P1 and P2': (r) => r.status === 200 });
         sleep(1);
 
-
         const order2Payload = { items: [{ productId: product1Id, quantity: 1 }, { productId: product3Id, quantity: 1 }] };
         const createOrder2Res = http.post(`${BASE_URL}/orders`, JSON.stringify(order2Payload), { headers: userAuthHeaders });
         check(createOrder2Res, { 'user created order with P1 and P3': (r) => r.status === 200 });
         sleep(1);
-
 
         const recommendationsRes = http.get(`${BASE_URL}/co-purchase/${product1Id}`, { headers: userAuthHeaders });
         check(recommendationsRes, {

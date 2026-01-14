@@ -1,0 +1,24 @@
+@startuml
+left to right direction
+actor "사용자" as User
+actor "관리자" as Admin
+
+rectangle "인증 시스템 (Auth System)" {
+  usecase "회원가입" as UC_Signup
+  usecase "로그인 (토큰 발급)" as UC_Login
+  usecase "로그아웃" as UC_Logout
+  usecase "토큰 갱신 (Refresh)" as UC_Refresh
+  usecase "비밀번호 변경" as UC_ChangePw
+  usecase "관리자 회원가입" as UC_AdminSignup
+
+  User --> UC_Signup
+  User --> UC_Login
+  User --> UC_Logout
+  User --> UC_Refresh
+  User --> UC_ChangePw
+
+  Admin --> UC_Login
+  Admin --> UC_Logout
+  Admin --> UC_AdminSignup
+}
+@enduml

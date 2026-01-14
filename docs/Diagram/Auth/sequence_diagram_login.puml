@@ -1,0 +1,35 @@
+@startuml
+actor User
+participant "AuthControllerV2" as Controller
+participant "AuthServiceV2" as Service
+participant "AuthenticationManager" as AuthMgr
+participant "JwtTokenProvider" as Jwt
+participant "RedisService" as Redis
+
+User -> Controller : 로그인 요청 (ID, PW)
+activate Controller
+
+Controller -> Service : login(LoginRequest)
+activate Service
+
+Service -> AuthMgr : authenticate(token)
+activate AuthMgr
+AuthMgr --> Service : Authentication 객체
+deactivate AuthMgr
+
+Service -> Jwt : createToken(Authentication)
+activate Jwt
+Jwt --> Service : TokenResponse (Access, Refresh)
+deactivate Jwt
+
+Service -> Redis : setValues(username, refreshToken)
+activate Redis
+Redis --> Service : 저장 완료
+deactivate Redis
+
+Service --> Controller : TokenResponse
+deactivate Service
+
+Controller --> User : 200 OK (AccessToken, RefreshToken Cookie)
+deactivate Controller
+@enduml

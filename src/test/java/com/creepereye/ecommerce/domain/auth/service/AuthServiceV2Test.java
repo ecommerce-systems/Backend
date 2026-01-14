@@ -43,7 +43,6 @@ class AuthServiceV2Test {
     @Test
     @DisplayName("Login should save refresh token to Redis")
     void login_shouldSaveTokenToRedis() {
-        // Given
         LoginRequest request = new LoginRequest("user", "password");
         Authentication authentication = mock(Authentication.class);
         when(authentication.getName()).thenReturn("user");
@@ -54,10 +53,8 @@ class AuthServiceV2Test {
         when(jwtTokenProvider.createToken(authentication)).thenReturn(tokenResponse);
         when(jwtTokenProvider.getRefreshTokenValidityInSeconds()).thenReturn(3600L);
 
-        // When
         authService.login(request);
 
-        // Then
         verify(redisService).setValues(eq("user"), eq("refresh"), anyLong(), eq(TimeUnit.SECONDS));
     }
 }

@@ -1,0 +1,31 @@
+@startuml
+actor User
+participant "UserController" as Controller
+participant "UserService" as Service
+participant "UserRepository" as Repo
+participant "DB"
+
+User -> Controller : 정보 수정 요청 (UserUpdateRequest)
+activate Controller
+
+Controller -> Service : updateUserInfo(request)
+activate Service
+
+Service -> Service : 현재 로그인 사용자 식별
+Service -> Repo : findByAuthUsername(username)
+activate Repo
+Repo --> Service : User 엔티티
+deactivate Repo
+
+Service -> Service : User 엔티티 정보 업데이트 (setter)
+Service -> Repo : save(user)
+activate Repo
+Repo -> DB : UPDATE users ...
+deactivate Repo
+
+Service --> Controller : void
+deactivate Service
+
+Controller --> User : 200 OK
+deactivate Controller
+@enduml

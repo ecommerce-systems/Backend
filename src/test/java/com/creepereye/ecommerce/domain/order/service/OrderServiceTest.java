@@ -73,7 +73,6 @@ class OrderServiceTest {
     @Test
     @DisplayName("createOrder should create and return OrderResponse")
     void createOrder_shouldCreateOrder() {
-        // Given
         OrderItemRequest itemRequest = new OrderItemRequest();
         itemRequest.setProductId(1);
         itemRequest.setQuantity(2);
@@ -85,10 +84,8 @@ class OrderServiceTest {
         when(productRepository.findById(1)).thenReturn(Optional.of(product));
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // When
         OrderResponse response = orderService.createOrder(request);
 
-        // Then
         assertThat(response).isNotNull();
         verify(orderRepository).save(any(Order.class));
     }
@@ -96,7 +93,6 @@ class OrderServiceTest {
     @Test
     @DisplayName("getMyOrders should return list of orders for current user")
     void getMyOrders_shouldReturnOrderList() {
-        // Given
         Order order = Order.builder().user(user).status("PENDING").build();
         OrderDetail detail = OrderDetail.builder()
                 .product(Product.builder().productId(1).price(BigDecimal.TEN).build())
@@ -108,10 +104,8 @@ class OrderServiceTest {
         when(userRepository.findByAuthUsername("testUser")).thenReturn(Optional.of(user));
         when(orderRepository.findByUserId(user.getId())).thenReturn(Collections.singletonList(order));
 
-        // When
         List<OrderResponse> results = orderService.getMyOrders();
 
-        // Then
         assertThat(results).hasSize(1);
         verify(orderRepository).findByUserId(user.getId());
     }
@@ -119,7 +113,6 @@ class OrderServiceTest {
     @Test
     @DisplayName("getOrderById should return order if owned by user")
     void getOrderById_shouldReturnOrder() {
-        // Given
         Order order = Order.builder().user(user).status("PENDING").build();
         OrderDetail detail = OrderDetail.builder()
                 .product(Product.builder().productId(1).price(BigDecimal.TEN).build())
@@ -131,24 +124,20 @@ class OrderServiceTest {
         when(userRepository.findByAuthUsername("testUser")).thenReturn(Optional.of(user));
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
 
-        // When
         OrderResponse response = orderService.getOrderById(1L);
 
-        // Then
         assertThat(response).isNotNull();
     }
 
     @Test
     @DisplayName("getOrderById should throw SecurityException if not owned by user")
     void getOrderById_shouldThrowSecurityException_whenNotOwner() {
-        // Given
         User otherUser = User.builder().id(2L).build();
         Order order = Order.builder().user(otherUser).build();
 
         when(userRepository.findByAuthUsername("testUser")).thenReturn(Optional.of(user));
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
 
-        // When & Then
         assertThatThrownBy(() -> orderService.getOrderById(1L))
                 .isInstanceOf(SecurityException.class)
                 .hasMessageContaining("not authorized");

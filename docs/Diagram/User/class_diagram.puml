@@ -1,0 +1,48 @@
+@startuml
+package "사용자 (User) 도메인" {
+
+    class User {
+        - Long id
+        - String name
+        - String phone
+        - String address
+        - Auth auth
+    }
+
+    interface UserRepository {
+        + findByName(String): Optional<User>
+        + findByAuthUsername(String): Optional<User>
+    }
+
+    class UserService {
+        + signUp(SignUpRequest): void
+        + signUpAdmin(SignUpRequest): void
+        + getUserInfo(): UserResponse
+        + updateUserInfo(UserUpdateRequest): void
+        + deleteAccount(): void
+    }
+
+    class UserController {
+        + getUserInfo(): ResponseEntity
+        + updateUserInfo(UserUpdateRequest): ResponseEntity
+    }
+
+    class UserResponse {
+        - String username
+        - String name
+        - String phone
+        - String address
+    }
+
+    class UserUpdateRequest {
+        - String phone
+        - String address
+    }
+
+    UserController --> UserService
+    UserService --> UserRepository
+    UserRepository ..> User
+    UserService ..> UserResponse
+    UserService ..> UserUpdateRequest
+}
+@enduml

@@ -41,20 +41,14 @@ class ProductServiceTest {
     @Test
     @DisplayName("createProduct should resolve categories and save product")
     void createProduct_shouldSaveProduct() {
-        // Given
         ProductCreateRequestDto dto = new ProductCreateRequestDto();
         dto.setProductCode(123);
         dto.setProdName("Test Product");
         dto.setPrice(BigDecimal.valueOf(100));
         dto.setProductTypeName("Type1");
-        // ... set other fields if necessary for full coverage, but basic is fine
 
         when(productTypeRepository.findByProductTypeName("Type1"))
                 .thenReturn(Optional.of(new ProductType(1, "Type1")));
-        // Assume other categories are null in DTO for simplicity, or mock them if they are mandatory?
-        // In the service code: new ProductType(null, dto.getProductTypeName())
-        // resolveProductType checks: if (incomingEntity == null || incomingEntity.getProductTypeName() == null) return null;
-        // So if DTO fields are null, it returns null.
         
         when(productRepository.save(any(Product.class))).thenAnswer(i -> {
             Product p = i.getArgument(0);
@@ -62,10 +56,8 @@ class ProductServiceTest {
             return p;
         });
 
-        // When
         Product result = productService.createProduct(dto);
 
-        // Then
         assertThat(result).isNotNull();
         assertThat(result.getProdName()).isEqualTo("Test Product");
         verify(productRepository).save(any(Product.class));
@@ -75,7 +67,6 @@ class ProductServiceTest {
     @Test
     @DisplayName("updateProduct should update fields and categories")
     void updateProduct_shouldUpdateProduct() {
-        // Given
         int productId = 1;
         ProductUpdateRequestDto dto = new ProductUpdateRequestDto();
         dto.setProdName("Updated Name");
@@ -86,10 +77,8 @@ class ProductServiceTest {
         
         when(productRepository.save(any(Product.class))).thenAnswer(i -> i.getArgument(0));
 
-        // When
         Product result = productService.updateProduct(productId, dto);
 
-        // Then
         assertThat(result.getProdName()).isEqualTo("Updated Name");
         verify(productRepository).save(existingProduct);
         verify(productSearchRepository).save(any(ProductSearch.class));

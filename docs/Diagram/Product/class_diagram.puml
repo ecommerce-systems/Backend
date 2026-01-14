@@ -1,0 +1,59 @@
+@startuml
+package "상품 (Product) 도메인" {
+
+    class Product {
+        - Integer productId
+        - String prodName
+        - BigDecimal price
+        - ... (Category Relations)
+    }
+
+    class ProductSearch {
+        - Integer productId
+        - String prodName
+        - String productTypeName
+        - ... (Denormalized Fields)
+    }
+
+    interface ProductRepository {
+        + findByProdNameContainingIgnoreCase(String): List<Product>
+    }
+
+    interface ProductSearchRepository {
+        + findTop20ByProdNameStartingWithIgnoreCase(String): List<ProductSearch>
+        + searchByMultipleCategories(...): List<ProductSearch>
+    }
+
+    class ProductService {
+        + createProduct(ProductCreateRequestDto): Product
+        + updateProduct(Integer, ProductUpdateRequestDto): Product
+        + searchNamesV1(String): List<String>
+        + searchNamesV2WithFilters(...): List<String>
+        + syncToSearch(Product): void
+    }
+
+    class ProductControllerV1 {
+        + createProduct(): ResponseEntity
+        + searchProductNames(): ResponseEntity
+    }
+
+    class ProductControllerV2 {
+        + searchProductNames(): ResponseEntity
+        + getProductById(): ResponseEntity
+    }
+    
+    class CategoryService {
+        + findAllColourGroups(): List<ColourGroup>
+        + ...
+    }
+
+    ProductControllerV1 --> ProductService
+    ProductControllerV2 --> ProductService
+    ProductService --> ProductRepository
+    ProductService --> ProductSearchRepository
+    ProductService --> CategoryService
+    
+    ProductRepository ..> Product
+    ProductSearchRepository ..> ProductSearch
+}
+@enduml
