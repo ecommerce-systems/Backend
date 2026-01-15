@@ -13,24 +13,38 @@ package "공동 구매 (CoPurchase) 도메인" {
     }
 
     class CoPurchaseService {
-        + getRecommendations(Integer): List<CoPurchaseResponse>
-        + createCoPurchase(CoPurchaseCreateRequest): void
+        + getRecommendationsV1(Integer): List<CoPurchaseResponseV1>
+        + getRecommendationsV2(Integer): List<ProductSearch>
         + populateCoPurchaseData(): void
     }
 
-    class CoPurchaseController {
-        + getRecommendations(Integer): List<CoPurchaseResponse>
+    class CoPurchaseControllerV1 {
+        + getRecommendations(Integer): List<CoPurchaseResponseV1>
+    }
+    class CoPurchaseControllerV2 {
+        + getRecommendations(Integer): List<ProductSearch>
     }
     
-    class CoPurchaseResponse {
+    class CoPurchaseResponseV1 {
         - Integer productId
-        - String prodName
-        - BigDecimal price
     }
+    
+    note right of CoPurchaseControllerV2
+        반환 타입이 ProductSearch로,
+        비정규화된 테이블의 데이터를 직접 사용함
+    end note
 
-    CoPurchaseController --> CoPurchaseService
+    CoPurchaseControllerV1 --> CoPurchaseService
+    CoPurchaseControllerV2 --> CoPurchaseService
     CoPurchaseService --> CoPurchaseRepository
+    CoPurchaseService --> product.ProductSearchRepository
     CoPurchaseRepository ..> CoPurchase
-    CoPurchaseService ..> CoPurchaseResponse
+    CoPurchaseService ..> CoPurchaseResponseV1
 }
+
+package "상품 (Product) 도메인" as product {
+    class ProductSearchRepository
+}
+
+hide empty members
 @enduml

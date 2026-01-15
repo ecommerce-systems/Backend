@@ -1,37 +1,78 @@
 @startuml
-actor User
-participant "CoPurchaseController" as Controller
-participant "CoPurchaseService" as Service
-participant "CoPurchaseRepository" as Repo
-participant "Cache (Redis)" as Cache
-participant "DB"
+title 추천 상품 조회 (V1: N+1 요청 vs V2: 단일 요청)
 
-User -> Controller : 추천 상품 요청 (productId)
-activate Controller
+actor 사용자
 
-Controller -> Service : getRecommendations(productId)
-activate Service
+box "API Layer" #LightBlue
+  participant "CoPurchaseControllerV1" as C1
+  participant "ProductControllerV1" as ProductC1
+  participant "CoPurchaseControllerV2" as C2
+end box
 
-Service -> Cache : 조회 (key=recommendations:productId)
-activate Cache
+box "Service Layer" #LightGreen
+  participant "CoPurchaseService" as Service
+end box
 
-alt Cache Hit
-    Cache --> Service : 캐시된 데이터
-else Cache Miss
-    Service -> Repo : findBySourceProduct...
-    activate Repo
-    Repo -> DB : SELECT * FROM co_purchase ...
-    DB --> Repo : List<CoPurchase>
-    deactivate Repo
+box "Repository Layer" #Orange
+  participant "CoPurchaseRepository" as CoRepo
+  participant "ProductRepository" as ProductRepo
+  participant "ProductSearchRepository" as ProductSearchRepo
+end box
+
+box "Database" #White
+  database "정규화된 RDB" as DB1
+  database "비정규화된 RDB" as DB2
+end box
+
+group V1: ID 목록 조회 후 N+1 추가 요청
+    사용자 -> C1: GET /api/v1/co-purchase/{id}
+    activate C1
+    C1 -> Service: getRecommendationsV1(id)
+    activate Service
+    Service -> CoRepo: findBySourceProduct...()
+    activate CoRepo
+    CoRepo -> DB1: SELECT target_product_id FROM co_purchase WHERE ...
+    DB1 --> CoRepo: List<Integer> (추천 상품 ID 목록)
+    deactivate CoRepo
+    Service --> C1: List<CoPurchaseResponseV1>
+    deactivate Service
+    C1 --> 사용자: 200 OK (ID 목록)
+    deactivate C1
     
-    Service -> Service : DTO 변환
-    Service -> Cache : 결과 저장 (TTL 적용)
+    loop N회 (추천 상품 개수만큼)
+        사용자 -> ProductC1: GET /api/v1/products/{id}
+        activate ProductC1
+        ProductC1 -> ProductRepo: findById(id)
+        activate ProductRepo
+        ProductRepo -> DB1: SELECT * FROM products LEFT JOIN ... WHERE product_id = ...
+        DB1 --> ProductRepo: Product
+        deactivate ProductRepo
+        ProductC1 --> 사용자: 200 OK (상품 상세 정보)
+        deactivate ProductC1
+    end
 end
-deactivate Cache
 
-Service --> Controller : List<CoPurchaseResponse>
-deactivate Service
+group V2: 단일 요청으로 모든 정보 조회
+    사용자 -> C2: GET /api/v2/co-purchase/{id}
+    activate C2
+    C2 -> Service: getRecommendationsV2(id)
+    activate Service
+    Service -> CoRepo: findBySourceProduct...()
+    activate CoRepo
+    CoRepo -> DB1: SELECT target_product_id FROM co_purchase WHERE ...
+    DB1 --> CoRepo: List<Integer> (추천 상품 ID 목록)
+    deactivate CoRepo
+    
+    Service -> ProductSearchRepo: findAllById(ids)
+    activate ProductSearchRepo
+    ProductSearchRepo -> DB2: SELECT * FROM product_searches WHERE product_id IN (...)
+    DB2 --> ProductSearchRepo: List<ProductSearch>
+    deactivate ProductSearchRepo
+    
+    Service --> C2: List<ProductSearch>
+    deactivate Service
+    C2 --> 사용자: 200 OK (상세 정보가 포함된 목록)
+    deactivate C2
+end
 
-Controller --> User : 200 OK (JSON)
-deactivate Controller
 @enduml

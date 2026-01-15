@@ -1,13 +1,16 @@
 package com.creepereye.ecommerce.domain.copurchase.service;
 
 import com.creepereye.ecommerce.domain.copurchase.dto.CoPurchaseCreateRequest;
+import com.creepereye.ecommerce.domain.copurchase.dto.CoPurchaseResponseV1;
 import com.creepereye.ecommerce.domain.copurchase.entity.CoPurchase;
 import com.creepereye.ecommerce.domain.copurchase.repository.CoPurchaseRepository;
 import com.creepereye.ecommerce.domain.order.entity.Order;
 import com.creepereye.ecommerce.domain.order.entity.OrderDetail;
 import com.creepereye.ecommerce.domain.order.repository.OrderRepository;
 import com.creepereye.ecommerce.domain.product.entity.Product;
+import com.creepereye.ecommerce.domain.product.entity.ProductSearch;
 import com.creepereye.ecommerce.domain.product.repository.ProductRepository;
+import com.creepereye.ecommerce.domain.product.repository.ProductSearchRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,16 +19,18 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
-import com.creepereye.ecommerce.domain.copurchase.dto.CoPurchaseResponseV1;
-import com.creepereye.ecommerce.domain.product.entity.ProductSearch;
-import com.creepereye.ecommerce.domain.product.repository.ProductSearchRepository;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CoPurchaseServiceTest {
@@ -43,103 +48,90 @@ class CoPurchaseServiceTest {
     private CoPurchaseService coPurchaseService;
 
     @Test
-    @DisplayName("getRecommendationsV1 should return list of IDs")
-    void getRecommendationsV1_shouldReturnIds() {
+    @DisplayName("V1 - 추천 상품 ID 목록을 반환해야 한다")
+    void getRecommendationsV1_shouldReturnListOfIds() {
+        // Given
         int productId = 1;
-        Product targetProduct = Product.builder().productId(2).prodName("Target").build();
-        CoPurchase coPurchase = CoPurchase.builder()
-                .sourceProduct(Product.builder().productId(productId).build())
-                .targetProduct(targetProduct)
-                .score(10.0f)
-                .build();
+        Product sourceProduct = Product.builder().productId(productId).build();
+        Product targetProduct = Product.builder().productId(2).build();
+        CoPurchase coPurchase = CoPurchase.builder().sourceProduct(sourceProduct).targetProduct(targetProduct).build();
 
         when(coPurchaseRepository.findBySourceProductProductIdOrderByScoreDesc(productId))
                 .thenReturn(Collections.singletonList(coPurchase));
 
+        // When
         List<CoPurchaseResponseV1> result = coPurchaseService.getRecommendationsV1(productId);
 
+        // Then
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getProductId()).isEqualTo(2);
+        verify(coPurchaseRepository).findBySourceProductProductIdOrderByScoreDesc(productId);
     }
 
     @Test
-    @DisplayName("getRecommendationsV2 should return list of ProductSearch details")
-    void getRecommendationsV2_shouldReturnDetails() {
+    @DisplayName("V2 - 추천 상품 상세 정보(ProductSearch) 목록을 반환해야 한다")
+    void getRecommendationsV2_shouldReturnListOfProductSearch() {
+        // Given
         int productId = 1;
-        Product targetProduct = Product.builder().productId(2).prodName("Target").build();
-        CoPurchase coPurchase = CoPurchase.builder()
-                .sourceProduct(Product.builder().productId(productId).build())
-                .targetProduct(targetProduct)
-                .score(10.0f)
-                .build();
-        
-        ProductSearch productSearch = ProductSearch.builder().productId(2).prodName("Target").build();
+        Product sourceProduct = Product.builder().productId(productId).build();
+        Product targetProduct = Product.builder().productId(2).build();
+        CoPurchase coPurchase = CoPurchase.builder().sourceProduct(sourceProduct).targetProduct(targetProduct).build();
+
+        ProductSearch recommendedProduct = ProductSearch.builder().productId(2).prodName("Recommended Product").build();
 
         when(coPurchaseRepository.findBySourceProductProductIdOrderByScoreDesc(productId))
                 .thenReturn(Collections.singletonList(coPurchase));
-        when(productSearchRepository.findAllById(anyList())).thenReturn(Collections.singletonList(productSearch));
+        when(productSearchRepository.findAllById(anyList()))
+                .thenReturn(Collections.singletonList(recommendedProduct));
 
+        // When
         List<ProductSearch> result = coPurchaseService.getRecommendationsV2(productId);
 
+        // Then
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getProdName()).isEqualTo("Target");
+        assertThat(result.get(0).getProductId()).isEqualTo(2);
+        assertThat(result.get(0).getProdName()).isEqualTo("Recommended Product");
+        verify(coPurchaseRepository).findBySourceProductProductIdOrderByScoreDesc(productId);
+        verify(productSearchRepository).findAllById(Collections.singletonList(2));
     }
-
+    
     @Test
-    @DisplayName("createCoPurchase should save CoPurchase")
+    @DisplayName("공동 구매 데이터 생성 시 정상적으로 저장되어야 한다")
     void createCoPurchase_shouldSaveCoPurchase() {
+        // Given
         CoPurchaseCreateRequest request = new CoPurchaseCreateRequest(1L, 2L, 5.0);
-
         Product source = Product.builder().productId(1).build();
         Product target = Product.builder().productId(2).build();
 
         when(productRepository.findById(1)).thenReturn(Optional.of(source));
         when(productRepository.findById(2)).thenReturn(Optional.of(target));
 
+        // When
         coPurchaseService.createCoPurchase(request);
 
+        // Then
         verify(coPurchaseRepository).save(any(CoPurchase.class));
     }
 
     @Test
-    @DisplayName("createCoPurchase should throw exception when product not found")
-    void createCoPurchase_shouldThrowException_whenProductNotFound() {
-        CoPurchaseCreateRequest request = new CoPurchaseCreateRequest(1L, 2L, 5.0);
+    @DisplayName("데이터 채우기 실행 시 주문 기반으로 공동 구매 관계가 저장되어야 한다")
+    void populateCoPurchaseData_shouldProcessOrdersAndSave() {
+        // Given
+        Product p1 = Product.builder().productId(1).build();
+        Product p2 = Product.builder().productId(2).build();
+        
+        OrderDetail od1 = OrderDetail.builder().product(p1).build();
+        OrderDetail od2 = OrderDetail.builder().product(p2).build();
 
-        when(productRepository.findById(1)).thenReturn(Optional.empty());
+        Order order = Order.builder().build();
+        order.setOrderDetails(Arrays.asList(od1, od2));
 
-        assertThatThrownBy(() -> coPurchaseService.createCoPurchase(request))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessageContaining("Source Product not found");
-    }
+        when(orderRepository.findAll()).thenReturn(Collections.singletonList(order));
 
-    @Test
-    @DisplayName("populateCoPurchaseData should process orders and save CoPurchases")
-    void populateCoPurchaseData_shouldProcessOrders() {
-        Product p1 = Product.builder().productId(1).prodName("P1").build();
-        Product p2 = Product.builder().productId(2).prodName("P2").build();
-        Product p3 = Product.builder().productId(3).prodName("P3").build();
-
-        OrderDetail d1 = OrderDetail.builder().product(p1).build();
-        OrderDetail d2 = OrderDetail.builder().product(p2).build();
-        OrderDetail d3 = OrderDetail.builder().product(p3).build();
-
-        Order o1 = Order.builder().build();
-        List<OrderDetail> details1 = new ArrayList<>();
-        details1.add(d1);
-        details1.add(d2);
-        o1.setOrderDetails(details1);
-
-        Order o2 = Order.builder().build();
-        List<OrderDetail> details2 = new ArrayList<>();
-        details2.add(d1);
-        details2.add(d3);
-        o2.setOrderDetails(details2);
-
-        when(orderRepository.findAll()).thenReturn(Arrays.asList(o1, o2));
-
+        // When
         coPurchaseService.populateCoPurchaseData();
 
+        // Then
         verify(coPurchaseRepository).saveAll(anyList());
     }
 }

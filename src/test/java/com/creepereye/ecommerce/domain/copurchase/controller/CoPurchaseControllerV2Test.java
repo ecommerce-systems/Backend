@@ -1,12 +1,15 @@
 package com.creepereye.ecommerce.domain.copurchase.controller;
 
+import com.creepereye.ecommerce.domain.auth.service.RedisService;
 import com.creepereye.ecommerce.domain.copurchase.service.CoPurchaseService;
 import com.creepereye.ecommerce.domain.product.entity.ProductSearch;
+import com.creepereye.ecommerce.global.security.provider.JwtTokenProvider;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -18,6 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CoPurchaseControllerV2.class)
+@Import({JwtTokenProvider.class})
 class CoPurchaseControllerV2Test {
 
     @Autowired
@@ -26,10 +30,13 @@ class CoPurchaseControllerV2Test {
     @MockBean
     private CoPurchaseService coPurchaseService;
 
+    @MockBean
+    private RedisService redisService;
+
     @Test
-    @DisplayName("GET /api/v2/co-purchase/{productId} should return recommendations")
+    @DisplayName("V2 - 인증된 사용자는 추천 상품 상세 정보 목록을 조회할 수 있다")
     @WithMockUser
-    void getRecommendationsV2_shouldReturnRecommendations() throws Exception {
+    void getRecommendationsV2_shouldReturnDetails() throws Exception {
         // Given
         Integer productId = 1;
         ProductSearch response = ProductSearch.builder()
@@ -47,7 +54,7 @@ class CoPurchaseControllerV2Test {
     }
 
     @Test
-    @DisplayName("GET /api/v2/co-purchase/{productId} should return unauthorized without authentication")
+    @DisplayName("V2 - 인증되지 않은 사용자는 401 Unauthorized를 반환한다")
     void getRecommendationsV2_shouldReturnUnauthorized() throws Exception {
         // Given
         Integer productId = 1;
