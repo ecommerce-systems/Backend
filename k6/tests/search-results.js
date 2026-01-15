@@ -55,23 +55,41 @@ function runSearchResultsFlow(version) {
     // 3. Search
     const keywords = ['Trousers', 'Shirt', 'Dress', 'Shoes', 'Denim', 'Jacket', 'Blue', 'Black', 'Casual', 'Formal'];
     const randomKeyword = keywords[Math.floor(Math.random() * keywords.length)];
-    const params = `keyword=${randomKeyword}&page=0&size=10`;
+    const searchParams = `keyword=${randomKeyword}&page=0&size=10`;
 
-    const searchStartTime = new Date();
-    const searchRes = http.get(`${productReadUrl}/search/results?${params}`, { headers: authHeaders });
-    const searchEndTime = new Date();
+    const totalSearchStartTime = new Date(); // Start time for the entire V1 process
 
-    const searchCheck = {};
-    searchCheck[`search results (${version}) status 200`] = (r) => r.status === 200;
-    searchCheck[`search results (${version}) has content`] = (r) => r.json('content') !== undefined && Array.isArray(r.json('content'));
-    check(searchRes, searchCheck);
+    if (version === 'v1') {
+        // V1: Get IDs first, then make separate requests for each ID
+        const searchResultsRes = http.get(`${productReadUrl}/search/results?${searchParams}`, { headers: authHeaders });
+        check(searchResultsRes, { 
+            'v1 search results status 200': (r) => r.status === 200,
+            'v1 search results has content': (r) => r.json('content') !== undefined && Array.isArray(r.json('content'))
+        });
 
-    // 4. Add trend data
-    if (searchRes.status === 200) {
-        if (version === 'v1') {
-            searchResultsTrendV1.add(searchEndTime - searchStartTime);
-        } else {
-            searchResultsTrendV2.add(searchEndTime - searchStartTime);
+        if (searchResultsRes.status === 200 && searchResultsRes.json('content')) {
+            const productIds = searchResultsRes.json('content').map(p => p.productId);
+            
+            for (const productId of productIds) {
+                const productDetailRes = http.get(`${productReadUrl}/${productId}`, { headers: authHeaders });
+                check(productDetailRes, { [`v1 get product detail ${productId} status 200`]: (r) => r.status === 200 });
+            }
+        }
+        const totalSearchEndTime = new Date();
+        searchResultsTrendV1.add(totalSearchEndTime - totalSearchStartTime);
+
+    } else { // version === 'v2'
+        // V2: Get all data in a single request
+        const searchResultsRes = http.get(`${productReadUrl}/search/results?${searchParams}`, { headers: authHeaders });
+        const totalSearchEndTime = new Date(); // End time for V2 single request
+        
+        check(searchResultsRes, { 
+            'v2 search results status 200': (r) => r.status === 200,
+            'v2 search results has content': (r) => r.json('content') !== undefined && Array.isArray(r.json('content'))
+        });
+
+        if (searchResultsRes.status === 200) {
+            searchResultsTrendV2.add(totalSearchEndTime - totalSearchStartTime);
         }
     }
 
