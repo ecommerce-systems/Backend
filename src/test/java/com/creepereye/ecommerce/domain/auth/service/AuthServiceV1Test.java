@@ -43,7 +43,7 @@ class AuthServiceV1Test {
     private AuthServiceV1 authService;
 
     @Test
-    @DisplayName("Login should save refresh token to DB")
+    @DisplayName("V1 로그인 시, Refresh Token이 DB에 저장된다")
     void login_shouldSaveTokenToDB() {
         LoginRequest request = new LoginRequest("user", "password");
         Authentication authentication = mock(Authentication.class);
@@ -61,7 +61,7 @@ class AuthServiceV1Test {
     }
     
     @Test
-    @DisplayName("Refresh should validate and issue new token")
+    @DisplayName("V1 토큰 갱신 시, 유효성 검증 후 새 토큰을 발급한다")
     void refresh_shouldIssueNewToken() {
         String refreshToken = "valid_refresh";
         String username = "user";

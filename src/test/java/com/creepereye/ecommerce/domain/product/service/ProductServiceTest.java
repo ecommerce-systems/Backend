@@ -10,6 +10,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -39,8 +42,8 @@ class ProductServiceTest {
     private ProductService productService;
 
     @Test
-    @DisplayName("createProduct should resolve categories and save product")
-    void createProduct_shouldSaveProduct() {
+    @DisplayName("상품 생성 시, 카테고리를 확인하고 Product와 ProductSearch를 모두 저장한다")
+    void createProduct_shouldSaveProductAndProductSearch() {
         ProductCreateRequestDto dto = new ProductCreateRequestDto();
         dto.setProductCode(123);
         dto.setProdName("Test Product");
@@ -65,23 +68,23 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("searchResultsV1 should return paginated results")
-    void searchResultsV1_shouldReturnPage() {
+    @DisplayName("V1 페이징 검색 시, ProductRepository를 통해 결과를 반환한다")
+    void searchResultsV1_shouldReturnPageFromProductRepository() {
         String keyword = "test";
-        org.springframework.data.domain.PageRequest pageable = org.springframework.data.domain.PageRequest.of(0, 10);
-        org.springframework.data.domain.Page<Product> page = org.mockito.Mockito.mock(org.springframework.data.domain.Page.class);
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Product> page = mock(Page.class);
 
         when(productRepository.findByProdNameContainingIgnoreCase(keyword, pageable)).thenReturn(page);
 
-        org.springframework.data.domain.Page<Product> result = productService.searchResultsV1(keyword, pageable);
+        Page<Product> result = productService.searchResultsV1(keyword, pageable);
 
         assertThat(result).isNotNull();
         verify(productRepository).findByProdNameContainingIgnoreCase(keyword, pageable);
     }
 
     @Test
-    @DisplayName("searchResults should return paginated results")
-    void updateProduct_shouldUpdateProduct() {
+    @DisplayName("상품 수정 시, Product와 ProductSearch 엔티티를 모두 업데이트한다")
+    void updateProduct_shouldUpdateProductAndProductSearch() {
         int productId = 1;
         ProductUpdateRequestDto dto = new ProductUpdateRequestDto();
         dto.setProdName("Updated Name");

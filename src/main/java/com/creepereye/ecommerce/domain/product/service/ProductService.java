@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -556,11 +557,11 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
-    public Page<Product> searchResultsV1(String keyword, PageRequest pageable) {
+    public Page<Product> searchResultsV1(String keyword, Pageable pageable) {
         return productRepository.findByProdNameContainingIgnoreCase(keyword, pageable);
     }
 
-    public Page<ProductSearch> searchResults(String keyword, PageRequest pageable) {
+    public Page<ProductSearch> searchResults(String keyword, Pageable pageable) {
         return productSearchRepository.findByProdNameContainingIgnoreCase(keyword, pageable);
     }
 

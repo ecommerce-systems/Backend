@@ -71,7 +71,7 @@ class OrderServiceTest {
     }
 
     @Test
-    @DisplayName("createOrder should create and return OrderResponse")
+    @DisplayName("주문 생성 시, OrderResponse가 정상적으로 반환된다")
     void createOrder_shouldCreateOrder() {
         OrderItemRequest itemRequest = new OrderItemRequest();
         itemRequest.setProductId(1);
@@ -91,7 +91,7 @@ class OrderServiceTest {
     }
 
     @Test
-    @DisplayName("getMyOrders should return list of orders for current user")
+    @DisplayName("내 주문 목록 조회 시, 현재 사용자의 주문 목록이 반환된다")
     void getMyOrders_shouldReturnOrderList() {
         Order order = Order.builder().user(user).status("PENDING").build();
         OrderDetail detail = OrderDetail.builder()
@@ -111,7 +111,7 @@ class OrderServiceTest {
     }
 
     @Test
-    @DisplayName("getOrderById should return order if owned by user")
+    @DisplayName("주문 상세 조회 시, 본인 소유의 주문이면 정상 반환된다")
     void getOrderById_shouldReturnOrder() {
         Order order = Order.builder().user(user).status("PENDING").build();
         OrderDetail detail = OrderDetail.builder()
@@ -130,7 +130,7 @@ class OrderServiceTest {
     }
 
     @Test
-    @DisplayName("getOrderById should throw SecurityException if not owned by user")
+    @DisplayName("주문 상세 조회 시, 타인 소유의 주문이면 SecurityException이 발생한다")
     void getOrderById_shouldThrowSecurityException_whenNotOwner() {
         User otherUser = User.builder().id(2L).build();
         Order order = Order.builder().user(otherUser).build();

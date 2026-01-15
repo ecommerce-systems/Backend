@@ -41,7 +41,7 @@ class AuthServiceV2Test {
     private AuthServiceV2 authService;
 
     @Test
-    @DisplayName("Login should save refresh token to Redis")
+    @DisplayName("V2 로그인 시, Refresh Token이 Redis에 저장된다")
     void login_shouldSaveTokenToRedis() {
         LoginRequest request = new LoginRequest("user", "password");
         Authentication authentication = mock(Authentication.class);

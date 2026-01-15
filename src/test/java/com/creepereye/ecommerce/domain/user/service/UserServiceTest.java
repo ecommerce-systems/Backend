@@ -26,7 +26,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -69,17 +68,14 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("signUp should save Auth and User")
-    void signUp_shouldSaveUser() {
+    @DisplayName("회원가입 시, Auth와 User 엔티티가 모두 저장된다")
+    void signUp_shouldSaveAuthAndUser() {
         SignUpRequest request = new SignUpRequest();
         request.setUsername("testUser");
         request.setPassword("password");
-        request.setName("Name");
-        request.setPhone("123");
-        request.setAddress("Addr");
 
         when(authRepository.existsByUsername("testUser")).thenReturn(false);
-        when(passwordEncoder.encode("password")).thenReturn("encoded");
+        when(passwordEncoder.encode("password")).thenReturn("encodedPassword");
 
         userService.signUp(request);
 
@@ -88,14 +84,10 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("signUp should throw exception if username exists")
+    @DisplayName("회원가입 시, 동일한 아이디가 존재하면 예외가 발생한다")
     void signUp_shouldThrowException_whenUsernameExists() {
         SignUpRequest request = new SignUpRequest();
         request.setUsername("testUser");
-        request.setPassword("password");
-        request.setName("Name");
-        request.setPhone("123");
-        request.setAddress("Addr");
 
         when(authRepository.existsByUsername("testUser")).thenReturn(true);
 
@@ -104,8 +96,8 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("getUserInfo should return user info")
-    void getUserInfo_shouldReturnUserInfo() {
+    @DisplayName("내 정보 조회 시, 현재 로그인된 사용자의 정보를 반환한다")
+    void getUserInfo_shouldReturnCurrentUserInfo() {
         setupSecurityContext();
         when(userRepository.findByAuthUsername("testUser")).thenReturn(Optional.of(user));
 
@@ -115,24 +107,25 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("updateUserInfo should update fields")
+    @DisplayName("내 정보 수정 시, 요청된 필드가 업데이트된다")
     void updateUserInfo_shouldUpdateFields() {
         setupSecurityContext();
         UserUpdateRequest request = new UserUpdateRequest();
-        request.setPhone("999");
-        request.setAddress("New Addr");
+        request.setPhone("010-9999-9999");
+        request.setAddress("New Address");
 
         when(userRepository.findByAuthUsername("testUser")).thenReturn(Optional.of(user));
 
         userService.updateUserInfo(request);
 
-        assertThat(user.getPhone()).isEqualTo("999");
+        assertThat(user.getPhone()).isEqualTo("010-9999-9999");
+        assertThat(user.getAddress()).isEqualTo("New Address");
         verify(userRepository).save(user);
     }
 
     @Test
-    @DisplayName("deleteAccount should delete user and auth")
-    void deleteAccount_shouldDelete() {
+    @DisplayName("회원 탈퇴 시, User와 Auth 정보가 모두 삭제된다")
+    void deleteAccount_shouldDeleteUserAndAuth() {
         setupSecurityContext();
         when(userRepository.findByAuthUsername("testUser")).thenReturn(Optional.of(user));
 

@@ -11,7 +11,6 @@ import com.creepereye.ecommerce.domain.product.entity.Product;
 import com.creepereye.ecommerce.domain.product.entity.ProductSearch;
 import com.creepereye.ecommerce.domain.product.repository.ProductRepository;
 import com.creepereye.ecommerce.domain.product.repository.ProductSearchRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,14 +18,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.verify;
@@ -50,7 +47,6 @@ class CoPurchaseServiceTest {
     @Test
     @DisplayName("V1 - 추천 상품 ID 목록을 반환해야 한다")
     void getRecommendationsV1_shouldReturnListOfIds() {
-        // Given
         int productId = 1;
         Product sourceProduct = Product.builder().productId(productId).build();
         Product targetProduct = Product.builder().productId(2).build();
@@ -59,10 +55,8 @@ class CoPurchaseServiceTest {
         when(coPurchaseRepository.findBySourceProductProductIdOrderByScoreDesc(productId))
                 .thenReturn(Collections.singletonList(coPurchase));
 
-        // When
         List<CoPurchaseResponseV1> result = coPurchaseService.getRecommendationsV1(productId);
 
-        // Then
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getProductId()).isEqualTo(2);
         verify(coPurchaseRepository).findBySourceProductProductIdOrderByScoreDesc(productId);
@@ -71,7 +65,6 @@ class CoPurchaseServiceTest {
     @Test
     @DisplayName("V2 - 추천 상품 상세 정보(ProductSearch) 목록을 반환해야 한다")
     void getRecommendationsV2_shouldReturnListOfProductSearch() {
-        // Given
         int productId = 1;
         Product sourceProduct = Product.builder().productId(productId).build();
         Product targetProduct = Product.builder().productId(2).build();
@@ -84,10 +77,8 @@ class CoPurchaseServiceTest {
         when(productSearchRepository.findAllById(anyList()))
                 .thenReturn(Collections.singletonList(recommendedProduct));
 
-        // When
         List<ProductSearch> result = coPurchaseService.getRecommendationsV2(productId);
 
-        // Then
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getProductId()).isEqualTo(2);
         assertThat(result.get(0).getProdName()).isEqualTo("Recommended Product");
@@ -98,7 +89,6 @@ class CoPurchaseServiceTest {
     @Test
     @DisplayName("공동 구매 데이터 생성 시 정상적으로 저장되어야 한다")
     void createCoPurchase_shouldSaveCoPurchase() {
-        // Given
         CoPurchaseCreateRequest request = new CoPurchaseCreateRequest(1L, 2L, 5.0);
         Product source = Product.builder().productId(1).build();
         Product target = Product.builder().productId(2).build();
@@ -106,17 +96,14 @@ class CoPurchaseServiceTest {
         when(productRepository.findById(1)).thenReturn(Optional.of(source));
         when(productRepository.findById(2)).thenReturn(Optional.of(target));
 
-        // When
         coPurchaseService.createCoPurchase(request);
 
-        // Then
         verify(coPurchaseRepository).save(any(CoPurchase.class));
     }
 
     @Test
     @DisplayName("데이터 채우기 실행 시 주문 기반으로 공동 구매 관계가 저장되어야 한다")
     void populateCoPurchaseData_shouldProcessOrdersAndSave() {
-        // Given
         Product p1 = Product.builder().productId(1).build();
         Product p2 = Product.builder().productId(2).build();
         
@@ -128,10 +115,8 @@ class CoPurchaseServiceTest {
 
         when(orderRepository.findAll()).thenReturn(Collections.singletonList(order));
 
-        // When
         coPurchaseService.populateCoPurchaseData();
 
-        // Then
         verify(coPurchaseRepository).saveAll(anyList());
     }
 }

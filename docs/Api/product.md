@@ -1,143 +1,108 @@
-# 상품 API
+# 상품 API 명세
 
-## 개요
-상품 조회, 검색 및 관리 기능을 제공합니다.
-두 가지 버전을 지원합니다:
-- **V1**: 표준 엔드포인트 (RDB 조인 기반 조회).
-- **V2**: 최적화된 검색 엔드포인트 (비정규화된 테이블 기반 고속 조회).
+## 1. 개요
+상품 조회, 검색 및 관리 기능을 제공함.
+성능 최적화 비교를 위해 두 가지 버전의 API를 지원함.
 
-## 기본 URL
-- V1: `/api/v1/products`
-- V2: `/api/v2/products`
-- 카테고리: `/api/v1/products/categories`
+-   **V1**: 정규화된 RDB 모델을 직접 조회. 다중 `JOIN`으로 인한 성능 저하 가능성이 존재.
+-   **V2**: 검색에 최적화된 비정규화 테이블을 조회하여 고속 검색을 지원.
 
----
-
-## 상품 엔드포인트 (V1)
-
-### 1. 전체 상품 조회
-- **URL**: `/`
-- **HTTP 메서드**: `GET`
-- **설명**: 등록된 모든 상품 목록을 조회합니다.
-- **응답**: `200 OK` (Product 엔티티 리스트)
-
-### 2. 상품 상세 조회
-- **URL**: `/{id}`
-- **HTTP 메서드**: `GET`
-- **설명**: 상품 ID를 통해 특정 상품의 상세 정보를 조회합니다.
-- **응답**: `200 OK` 또는 `404 Not Found`
-
-### 3. 상품명 검색 (V1)
-- **URL**: `/search`
-- **HTTP 메서드**: `GET`
-- **쿼리 파라미터**:
-  - `keyword`: 검색어.
-- **응답**: `200 OK`
-  ```json
-  ["상품 A", "상품 B"]
-  ```
-
-### 4. 상품 결과 페이징 검색 (V1)
-- **URL**: `/search/results`
-- **HTTP 메서드**: `GET`
-- **설명**: 키워드로 상품을 검색하고, 결과를 페이징하여 반환합니다.
-- **쿼리 파라미터**:
-  - `keyword`: 검색어 (필수).
-  - `page`: 페이지 번호 (0부터 시작, 기본값: 0).
-  - `size`: 페이지당 아이템 수 (기본값: 10).
-  - `sort`: 정렬 기준 필드 (기본값: productId).
-- **응답**: `200 OK` (Spring의 `Page<Product>` 객체)
-
-### 5. 상품 등록 (관리자)
-- **URL**: `/`
-- **HTTP 메서드**: `POST`
-- **설명**: 새로운 상품을 등록합니다. `ADMIN` 권한이 필요합니다.
-- **헤더**:
-  - `Authorization`: `Bearer <accessToken>`
-- **요청 본문 (ProductCreateRequestDto)**:
-  ```json
-  {
-    "productCode": 12345,
-    "prodName": "새로운 상품",
-    "detailDesc": "상품 설명...",
-    "price": 99000,
-    "productTypeName": "바지",
-    "departmentName": "남성",
-    "productGroupName": "하의",
-    ...
-  }
-  ```
-- **응답**: `201 Created`
-
-### 6. 상품 수정 (관리자)
-- **URL**: `/{id}`
-- **HTTP 메서드**: `PUT`
-- **설명**: 기존 상품 정보를 수정합니다. `ADMIN` 권한이 필요합니다.
-- **헤더**:
-  - `Authorization`: `Bearer <accessToken>`
-- **요청 본문 (ProductUpdateRequestDto)**:
-- **응답**: `200 OK`
-
-### 7. 상품 삭제 (관리자)
-- **URL**: `/{id}`
-- **HTTP 메서드**: `DELETE`
-- **설명**: 상품을 삭제합니다. `ADMIN` 권한이 필요합니다.
-- **헤더**:
-  - `Authorization`: `Bearer <accessToken>`
-- **응답**: `204 No Content`
+## 2. 기본 URL
+-   **V1**: `/api/v1/products`
+-   **V2**: `/api/v2/products`
+-   **카테고리**: `/api/v1/products/categories`
 
 ---
 
-## 상품 엔드포인트 (V2)
+## 3. 상품 엔드포인트 (V1)
 
-### 1. 상품 상세 조회 (V2)
-- **URL**: `/{id}`
-- **HTTP 메서드**: `GET`
-- **설명**: 최적화된 검색 인덱스(비정규화 테이블)에서 상품 정보를 조회합니다. (조인 없음)
-- **응답**: `200 OK` (ProductSearch 엔티티)
+### 3.1. 전체 상품 조회
+-   **URL**: `/`
+-   **HTTP Method**: `GET`
+-   **설명**: 등록된 모든 상품 목록을 조회함.
+-   **응답**: `200 OK` (`Product` 엔티티 리스트)
 
-### 2. 필터 기반 상품명 검색
-- **URL**: `/search`
-- **HTTP 메서드**: `GET`
-- **설명**: 다양한 카테고리 필터를 지원하는 고급 검색입니다.
-- **쿼리 파라미터**:
-  - `keyword`: 검색어 (필수).
-  - `productType` (선택)
-  - `department` (선택)
-  - `productGroup` (선택)
-  - `section` (선택)
-- **응답**: `200 OK`
-  ```json
-  ["필터링된 상품 A", "필터링된 상품 B"]
-  ```
+### 3.2. 상품 상세 조회
+-   **URL**: `/{id}`
+-   **HTTP Method**: `GET`
+-   **설명**: 상품 ID를 통해 특정 상품의 상세 정보를 조회함.
+-   **응답**: `200 OK` 또는 `404 Not Found`
 
-### 3. 상품 결과 페이징 검색 (V2)
-- **URL**: `/search/results`
-- **HTTP 메서드**: `GET`
-- **설명**: 키워드로 상품을 검색하고, 결과를 페이징하여 반환합니다. (비정규화 테이블 기반)
-- **쿼리 파라미터**:
-  - `keyword`: 검색어 (필수).
-  - `page`: 페이지 번호 (0부터 시작, 기본값: 0).
-  - `size`: 페이지당 아이템 수 (기본값: 10).
-  - `sort`: 정렬 기준 필드 (기본값: productId).
-- **응답**: `200 OK` (Spring의 `Page<ProductSearch>` 객체)
+### 3.3. 상품명 검색
+-   **URL**: `/search`
+-   **HTTP Method**: `GET`
+-   **쿼리 파라미터**: `keyword` (검색어)
+-   **응답**: `200 OK` (상품명 `String` 리스트)
+    ```json
+    ["상품 A", "상품 B"]
+    ```
 
+### 3.4. 상품 페이징 검색
+-   **URL**: `/search/results`
+-   **HTTP Method**: `GET`
+-   **설명**: 키워드로 상품을 검색하고, 결과를 페이징하여 반환함.
+-   **쿼리 파라미터**:
+    -   `keyword`: 검색어 (필수)
+    -   `page`: 페이지 번호 (0부터 시작, 기본값: 0)
+    -   `size`: 페이지당 아이템 수 (기본값: 10)
+    -   `sort`: 정렬 기준 필드 (기본값: productId)
+-   **응답**: `200 OK` (Spring `Page<Product>` 객체)
+
+### 3.5. 상품 등록 (관리자)
+-   **URL**: `/`
+-   **HTTP Method**: `POST`
+-   **권한**: `ADMIN`
+-   **설명**: 새로운 상품을 등록함.
+-   **요청 본문 (`ProductCreateRequestDto`)**:
+    ```json
+    { "prodName": "새 상품", "price": 99000, ... }
+    ```
+-   **응답**: `201 Created`
+
+### 3.6. 상품 수정 (관리자)
+-   **URL**: `/{id}`
+-   **HTTP Method**: `PUT`
+-   **권한**: `ADMIN`
+-   **설명**: 기존 상품 정보를 수정함.
+-   **응답**: `200 OK`
+
+### 3.7. 상품 삭제 (관리자)
+-   **URL**: `/{id}`
+-   **HTTP Method**: `DELETE`
+-   **권한**: `ADMIN`
+-   **설명**: 상품을 삭제함.
+-   **응답**: `204 No Content`
 
 ---
 
-## 카테고리 엔드포인트
-**기본 URL**: `/api/v1/products/categories`
+## 4. 상품 엔드포인트 (V2)
 
-모든 엔드포인트는 해당 카테고리에 속한 이름 목록(`List<String>`)을 반환합니다.
+### 4.1. 상품 상세 조회
+-   **URL**: `/{id}`
+-   **HTTP Method**: `GET`
+-   **설명**: 비정규화된 테이블에서 상품 정보를 빠르게 조회함. (`JOIN` 없음)
+-   **응답**: `200 OK` (`ProductSearch` 엔티티)
 
-- `GET /colour-groups`: 색상 그룹 목록 조회
-- `GET /departments`: 부서 목록 조회
-- `GET /garment-groups`: 의류 그룹 목록 조회
-- `GET /graphical-appearances`: 그래픽 모양 목록 조회
-- `GET /index-groups`: 인덱스 그룹 목록 조회
-- `GET /indices`: 인덱스 목록 조회
-- `GET /perceived-colour-masters`: 인지된 기본 색상 목록 조회
-- `GET /perceived-colour-values`: 인지된 색상 값 목록 조회
-- `GET /product-groups`: 상품 그룹 목록 조회
-- `GET /product-types`: 상품 타입 목록 조회
-- `GET /sections`: 섹션 목록 조회
+### 4.2. 필터 기반 상품명 검색
+-   **URL**: `/search`
+-   **HTTP Method**: `GET`
+-   **설명**: 다양한 카테고리를 조합하여 상품명을 검색하는 고급 검색 기능.
+-   **쿼리 파라미터**:
+    -   `keyword`: 검색어 (필수)
+    -   `productType`, `department`, `productGroup`, `section`: 카테고리 필터 (선택)
+-   **응답**: `200 OK` (상품명 `String` 리스트)
+
+### 4.3. 상품 페이징 검색
+-   **URL**: `/search/results`
+-   **HTTP Method**: `GET`
+-   **설명**: 키워드로 상품을 검색하고, 비정규화 테이블에서 페이징하여 반환함.
+-   **쿼리 파라미터**: (V1과 동일)
+-   **응답**: `200 OK` (Spring `Page<ProductSearch>` 객체)
+
+---
+
+## 5. 카테고리 엔드포인트
+-   **기본 URL**: `/api/v1/products/categories`
+-   **설명**: 모든 카테고리 엔드포인트는 해당 카테고리에 속한 이름 목록(`List<String>`)을 반환함.
+-   **엔드포인트 목록**:
+    -   `GET /colour-groups`, `GET /departments`, `GET /garment-groups`, 등 11개 카테고리.

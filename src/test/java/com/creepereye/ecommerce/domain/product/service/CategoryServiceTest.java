@@ -29,7 +29,7 @@ class CategoryServiceTest {
     private CategoryService categoryService;
 
     @Test
-    @DisplayName("findAll methods should call corresponding repository")
+    @DisplayName("모든 카테고리 조회 시, 각각의 Repository를 호출해야 한다")
     void findAll_shouldCallRepositories() {
         categoryService.findAllColourGroups();
         verify(colourGroupRepository).findAll();
