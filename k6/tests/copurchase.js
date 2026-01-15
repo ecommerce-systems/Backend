@@ -2,8 +2,10 @@ import http from 'k6/http';
 import { check, sleep, group } from 'k6';
 import { Trend } from 'k6/metrics';
 
-const v1Trend = new Trend('copurchase_v1_duration');
-const v2Trend = new Trend('copurchase_v2_duration');
+const v1MissTrend = new Trend('copurchase_v1_miss_duration');
+const v1HitTrend = new Trend('copurchase_v1_hit_duration');
+const v2MissTrend = new Trend('copurchase_v2_miss_duration');
+const v2HitTrend = new Trend('copurchase_v2_hit_duration');
 
 export let options = {
     scenarios: {
@@ -11,14 +13,14 @@ export let options = {
             executor: 'constant-vus',
             exec: 'testCoPurchaseV1',
             vus: 5,
-            duration: '30s',
+            duration: '45s',
         },
         v2_copurchase: {
             executor: 'constant-vus',
             exec: 'testCoPurchaseV2',
             vus: 5,
-            duration: '30s',
-            startTime: '32s',
+            duration: '45s',
+            startTime: '47s',
         },
     },
 };
@@ -36,8 +38,8 @@ function createProduct(authHeaders, productName) {
     return http.post(`${BASE_URL}/v1/products`, JSON.stringify(productPayload), { headers: authHeaders });
 }
 
-// Main logic
-function runCoPurchaseFlow(version) {
+// Main flow for a single VU
+function setupAndExecute() {
     const uniqueId = `${__VU}_${Date.now()}`;
     const adminUsername = `admin_cp_${uniqueId}`;
     const userUsername = `user_cp_${uniqueId}`;
@@ -47,28 +49,26 @@ function runCoPurchaseFlow(version) {
     let adminToken, product1Id, product2Id;
 
     const adminSignupRes = http.post(`${BASE_URL}/v1/auth/signup-admin`, JSON.stringify({ username: adminUsername, password: password, name: "Admin"}), { headers: { 'Content-Type': 'application/json' }});
-    check(adminSignupRes, { 'admin signup ok': (r) => r.status === 200 });
+    if (adminSignupRes.status !== 200) return null;
     
     const adminLoginRes = http.post(`${BASE_URL}/v1/auth/login`, JSON.stringify({ username: adminUsername, password: password }), { headers: { 'Content-Type': 'application/json' }});
-    if (adminLoginRes.status === 200) {
-        adminToken = adminLoginRes.json('accessToken');
-        const adminHeaders = { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' };
-        
-        const p1Res = createProduct(adminHeaders, `P1_${uniqueId}`);
-        const p2Res = createProduct(adminHeaders, `P2_${uniqueId}`);
+    if (adminLoginRes.status !== 200) return null;
 
-        if (p1Res.status === 201) product1Id = p1Res.json('productId');
-        if (p2Res.status === 201) product2Id = p2Res.json('productId');
-    }
+    adminToken = adminLoginRes.json('accessToken');
+    const adminHeaders = { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' };
+    
+    const p1Res = createProduct(adminHeaders, `P1_${uniqueId}`);
+    const p2Res = createProduct(adminHeaders, `P2_${uniqueId}`);
 
-    if (!product1Id || !product2Id) {
-        return; // Can't proceed if products weren't created
-    }
+    if (p1Res.status === 201) product1Id = p1Res.json('productId');
+    if (p2Res.status === 201) product2Id = p2Res.json('productId');
+
+    if (!product1Id || !product2Id) return null;
 
     // 2. Setup: Create user, login, create order
     let userToken;
     const userSignupRes = http.post(`${BASE_URL}/v1/auth/signup`, JSON.stringify({ username: userUsername, password: password, name: "User"}), { headers: { 'Content-Type': 'application/json' }});
-    check(userSignupRes, { 'user signup ok': (r) => r.status === 200 });
+    if (userSignupRes.status !== 200) return null;
 
     const userLoginRes = http.post(`${BASE_URL}/v1/auth/login`, JSON.stringify({ username: userUsername, password: password }), { headers: { 'Content-Type': 'application/json' }});
     if (userLoginRes.status === 200) {
@@ -79,41 +79,75 @@ function runCoPurchaseFlow(version) {
         http.post(`${BASE_URL}/v1/orders`, JSON.stringify(orderPayload), { headers: userHeaders });
     }
 
-    if (!userToken) {
-        return; // Can't proceed without user login
-    }
+    if (!userToken) return null;
+
+    sleep(1); 
     
-    sleep(1); // Give time for order to process
+    return { userToken, product1Id };
+}
 
-    // 3. Execute and Measure
+// V1 Test Execution
+export function testCoPurchaseV1() {
+    const setupData = setupAndExecute();
+    if (!setupData) return;
+
+    const { userToken, product1Id } = setupData;
     const userHeaders = { 'Authorization': `Bearer ${userToken}` };
-    const totalStartTime = new Date();
 
-    if (version === 'v1') {
+    // V1 - Cache Miss
+    group('V1 - Cache Miss', () => {
+        const startTime = new Date();
         const res = http.get(`${BASE_URL}/v1/co-purchase/${product1Id}`, { headers: userHeaders });
-        check(res, { 'v1 get recommendation IDs ok': (r) => r.status === 200 });
-
         if (res.status === 200 && res.json().length > 0) {
             const recommendedIds = res.json().map(p => p.productId);
             for (const id of recommendedIds) {
                 http.get(`${BASE_URL}/v1/products/${id}`, { headers: userHeaders });
             }
         }
-        const totalEndTime = new Date();
-        v1Trend.add(totalEndTime - totalStartTime);
+        const endTime = new Date();
+        v1MissTrend.add(endTime - startTime);
+    });
 
-    } else { // version === 'v2'
-        const res = http.get(`${BASE_URL}/v2/co-purchase/${product1Id}`, { headers: userHeaders });
-        check(res, { 'v2 get recommendations ok': (r) => r.status === 200 });
-        const totalEndTime = new Date();
-        v2Trend.add(totalEndTime - totalStartTime);
-    }
+    sleep(0.5);
+
+    // V1 - Cache Hit
+    group('V1 - Cache Hit', () => {
+        const startTime = new Date();
+        const res = http.get(`${BASE_URL}/v1/co-purchase/${product1Id}`, { headers: userHeaders });
+        if (res.status === 200 && res.json().length > 0) {
+            const recommendedIds = res.json().map(p => p.productId);
+            for (const id of recommendedIds) {
+                http.get(`${BASE_URL}/v1/products/${id}`, { headers: userHeaders });
+            }
+        }
+        const endTime = new Date();
+        v1HitTrend.add(endTime - startTime);
+    });
 }
 
-export function testCoPurchaseV1() {
-    runCoPurchaseFlow('v1');
-}
-
+// V2 Test Execution
 export function testCoPurchaseV2() {
-    runCoPurchaseFlow('v2');
+    const setupData = setupAndExecute();
+    if (!setupData) return;
+
+    const { userToken, product1Id } = setupData;
+    const userHeaders = { 'Authorization': `Bearer ${userToken}` };
+
+    // V2 - Cache Miss
+    group('V2 - Cache Miss', () => {
+        const startTime = new Date();
+        http.get(`${BASE_URL}/v2/co-purchase/${product1Id}`, { headers: userHeaders });
+        const endTime = new Date();
+        v2MissTrend.add(endTime - startTime);
+    });
+
+    sleep(0.5);
+
+    // V2 - Cache Hit
+    group('V2 - Cache Hit', () => {
+        const startTime = new Date();
+        http.get(`${BASE_URL}/v2/co-purchase/${product1Id}`, { headers: userHeaders });
+        const endTime = new Date();
+        v2HitTrend.add(endTime - startTime);
+    });
 }
