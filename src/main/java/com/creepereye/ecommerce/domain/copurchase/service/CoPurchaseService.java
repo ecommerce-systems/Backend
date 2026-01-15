@@ -1,7 +1,7 @@
 package com.creepereye.ecommerce.domain.copurchase.service;
 
 import com.creepereye.ecommerce.domain.copurchase.dto.CoPurchaseCreateRequest;
-import com.creepereye.ecommerce.domain.copurchase.dto.CoPurchaseResponse;
+import com.creepereye.ecommerce.domain.copurchase.dto.CoPurchaseResponseV2;
 import com.creepereye.ecommerce.domain.copurchase.dto.CoPurchaseResponseV1;
 import com.creepereye.ecommerce.domain.copurchase.entity.CoPurchase;
 import com.creepereye.ecommerce.domain.copurchase.repository.CoPurchaseRepository;
@@ -58,11 +58,11 @@ public class CoPurchaseService {
     @Deprecated
     @Cacheable(value = "recommendations", key = "#productId")
     @Transactional(readOnly = true)
-    public List<CoPurchaseResponse> getRecommendations(Integer productId) {
+    public List<CoPurchaseResponseV2> getRecommendations(Integer productId) {
         List<CoPurchase> coPurchases = coPurchaseRepository.findBySourceProductProductIdOrderByScoreDesc(productId);
 
         return coPurchases.stream()
-                .map(coPurchase -> new CoPurchaseResponse(coPurchase.getTargetProduct()))
+                .map(coPurchase -> new CoPurchaseResponseV2(coPurchase.getTargetProduct()))
                 .collect(Collectors.toList());
     }
 

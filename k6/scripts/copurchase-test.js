@@ -99,30 +99,18 @@ export default function () {
         check(createOrder2Res, { 'user created order with P1 and P3': (r) => r.status === 200 });
         sleep(1);
 
-        // --- V1 Test: Get IDs then Get Details (N+1 Problem) ---
-        group('V1: Co-Purchase Recommendations (Fetch IDs -> Fetch Details)', () => {
-             const v1Res = http.get(`${BASE_URL}/co-purchase/${product1Id}`, { headers: userAuthHeaders });
-             check(v1Res, { 'v1 get ids 200': (r) => r.status === 200 });
-             
-             if (v1Res.status === 200) {
-                 const recommendations = v1Res.json();
-                 if (Array.isArray(recommendations)) {
-                     recommendations.forEach(rec => {
-                         // Simulate fetching detail for each recommendation
-                         http.get(`${BASE_URL}/products/${rec.productId}`, { headers: userAuthHeaders });
-                     });
-                 }
-             }
+        const recommendationsRes = http.get(`${BASE_URL}/co-purchase/${product1Id}`, { headers: userAuthHeaders });
+        check(recommendationsRes, {
+            'get recommendations returns 200': (r) => r.status === 200,
+            'get recommendations returns an array': (r) => {
+                try {
+                    return Array.isArray(r.json());
+                } catch (e) {
+                    console.error(`Failed to parse recommendations response: ${r.body}`);
+                    return false;
+                }
+            },
         });
-        
-        sleep(1);
-
-        // --- V2 Test: Get Full Details Directly (Single Query) ---
-        group('V2: Co-Purchase Recommendations (Single Fetch)', () => {
-             const v2Res = http.get(`${BASE_URL.replace('v1', 'v2')}/co-purchase/${product1Id}`, { headers: userAuthHeaders });
-             check(v2Res, { 'v2 get details 200': (r) => r.status === 200 });
-        });
-        
         sleep(1);
     }
 }

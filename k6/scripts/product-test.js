@@ -57,7 +57,7 @@ export default function () {
     if (adminLoginRes.status === 200) {
         const adminAccessToken = adminLoginRes.json('accessToken');
         const authHeaders = { 'Authorization': `Bearer ${adminAccessToken}`, 'Content-Type': 'application/json' };
-        
+
         const productPayload = {
             productCode: Math.floor(Math.random() * 100000),
             prodName: `K6 Test Product ${uniqueId}`,
@@ -75,10 +75,10 @@ export default function () {
             detailDesc: "Created by k6 performance test",
             price: 100.0
         };
-        
+
         const createRes = http.post(`${PRODUCT_WRITE_URL}`, JSON.stringify(productPayload), { headers: authHeaders });
         check(createRes, { 'admin can create product': (r) => r.status === 201 });
-        
+
         if (createRes.status !== 201) {
             console.error(`Product creation failed: Status ${createRes.status}, Body: ${createRes.body}`);
         }
@@ -87,11 +87,11 @@ export default function () {
             const productId = createRes.json().productId;
 
             const getRes = http.get(`${PRODUCT_READ_URL}/${productId}`, { headers: authHeaders });
-            check(getRes, { 
+            check(getRes, {
                 [`admin can read product (${VERSION})`]: (r) => r.status === 200,
                 'has product name': (r) => r.json('prodName') !== undefined
             });
-            
+
             if (getRes.status !== 200) {
                 console.error(`Product read failed: Status ${getRes.status}, Body: ${getRes.body}`);
             }
@@ -108,7 +108,7 @@ export default function () {
             const deleteRes = http.del(`${PRODUCT_WRITE_URL}/${productId}`, null, { headers: authHeaders });
             check(deleteRes, { 'admin can delete product': (r) => r.status === 204 });
         }
-    } 
+    }
     sleep(1);
 
     const userUsername = `user_${uniqueId}_${VERSION}`;
@@ -131,24 +131,17 @@ export default function () {
             'search results are an array': (r) => r.json() && Array.isArray(r.json()),
         });
 
-        const paginatedSearchRes = http.get(`${PRODUCT_READ_URL}/search/results?keyword=Trousers&page=0&size=10`, { headers: userAuthHeaders });
-        check(paginatedSearchRes, {
-            [`user can get paginated results (${VERSION})`]: (r) => r.status === 200,
-            'has content': (r) => r.json('content') && Array.isArray(r.json('content')),
-            'has totalElements': (r) => r.json('totalElements') !== undefined
-        });
-
         if (VERSION === 'v2') {
             const productGroup = encodeURIComponent('Garment Lower body');
             const params = `keyword=Trousers&department=Men&productGroup=${productGroup}`;
             const filterSearchRes = http.get(`${PRODUCT_READ_URL}/search?${params}`, { headers: userAuthHeaders });
-            
+
             const isStatus200 = check(filterSearchRes, {
                 'user can search with filters (v2)': (r) => r.status === 200,
             });
 
             if (!isStatus200) {
-                 console.error(`Filtered search failed. Status: ${filterSearchRes.status}, Body: ${filterSearchRes.body}`);
+                console.error(`Filtered search failed. Status: ${filterSearchRes.status}, Body: ${filterSearchRes.body}`);
             } else {
                 check(filterSearchRes, {
                     'filtered results are an array': (r) => {

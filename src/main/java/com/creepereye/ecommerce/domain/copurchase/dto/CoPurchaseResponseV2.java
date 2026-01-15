@@ -7,13 +7,13 @@ import lombok.Getter;
 import java.math.BigDecimal;
 
 @Getter
-public class CoPurchaseResponse {
+public class CoPurchaseResponseV2 {
 
     private final Integer productId;
     private final String prodName;
     private final BigDecimal price;
 
-    public CoPurchaseResponse(Product product) {
+    public CoPurchaseResponseV2(Product product) {
         this.productId = product.getProductId();
         this.prodName = product.getProdName();
         this.price = product.getPrice();

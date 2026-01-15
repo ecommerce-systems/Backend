@@ -44,7 +44,7 @@ public class ProductControllerV2 {
             @RequestParam("keyword") String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "id") String sort) {
+            @RequestParam(defaultValue = "productId") String sort) {
         
         PageRequest pageable = PageRequest.of(page, size, Sort.by(sort));
         Page<ProductSearch> results = productService.searchResults(keyword, pageable);

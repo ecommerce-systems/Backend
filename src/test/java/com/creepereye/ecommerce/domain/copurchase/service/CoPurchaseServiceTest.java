@@ -1,7 +1,6 @@
 package com.creepereye.ecommerce.domain.copurchase.service;
 
 import com.creepereye.ecommerce.domain.copurchase.dto.CoPurchaseCreateRequest;
-import com.creepereye.ecommerce.domain.copurchase.dto.CoPurchaseResponse;
 import com.creepereye.ecommerce.domain.copurchase.entity.CoPurchase;
 import com.creepereye.ecommerce.domain.copurchase.repository.CoPurchaseRepository;
 import com.creepereye.ecommerce.domain.order.entity.Order;
@@ -17,7 +16,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
