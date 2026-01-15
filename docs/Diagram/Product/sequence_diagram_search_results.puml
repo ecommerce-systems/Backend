@@ -1,28 +1,28 @@
 @startuml
 title 상품 페이징 검색 (V1 vs V2)
 
-actor User
+actor 사용자
 
-box "API Layer" #LightBlue
-  participant "ProductControllerV1" as C1
-  participant "ProductControllerV2" as C2
+box "API 계층" #LightBlue
+  participant "상품 컨트롤러 V1" as C1
+  participant "상품 컨트롤러 V2" as C2
 end box
 
-box "Service Layer" #LightGreen
-  participant "ProductService" as Service
+box "서비스 계층" #LightGreen
+  participant "상품 서비스" as Service
 end box
 
-box "Repository Layer" #Orange
-  participant "ProductRepository" as R1
-  participant "ProductSearchRepository" as R2
+box "리포지토리 계층" #Orange
+  participant "상품 리포지토리" as R1
+  participant "상품 검색 리포지토리" as R2
 end box
 
-box "Database" #White
-  database "RDB (Normalized)" as DB1
-  database "RDB (Denormalized)" as DB2
+box "데이터베이스" #White
+  database "정규화된 RDB" as DB1
+  database "비정규화된 RDB" as DB2
 end box
 
-User -> C1: GET /api/v1/.../search/results?keyword=...
+사용자 -> C1: GET /api/v1/.../search/results?keyword=...
 activate C1
 C1 -> Service: searchResultsV1(keyword, pageable)
 activate Service
@@ -31,16 +31,16 @@ Service -> R1: findByProdNameContainingIgnoreCase(keyword, pageable)
 activate R1
 R1 -> DB1: SELECT ... FROM products p LEFT JOIN ... WHERE p.name LIKE ...
 activate DB1
-DB1 --> R1: Product Page
+DB1 --> R1: 상품 페이지
 deactivate DB1
 R1 --> Service: Page<Product>
 deactivate R1
 Service --> C1: Page<Product>
 deactivate Service
-C1 --> User: 200 OK (Page<Product>)
+C1 --> 사용자: 200 OK (Page<Product>)
 deactivate C1
 
-User -> C2: GET /api/v2/.../search/results?keyword=...
+사용자 -> C2: GET /api/v2/.../search/results?keyword=...
 activate C2
 C2 -> Service: searchResults(keyword, pageable)
 activate Service
@@ -48,13 +48,13 @@ Service -> R2: findByProdNameContainingIgnoreCase(keyword, pageable)
 activate R2
 R2 -> DB2: SELECT ... FROM product_searches WHERE prod_name LIKE ...
 activate DB2
-DB2 --> R2: ProductSearch Page
+DB2 --> R2: 상품 검색 페이지
 deactivate DB2
 R2 --> Service: Page<ProductSearch>
 deactivate R2
 Service --> C2: Page<ProductSearch>
 deactivate Service
-C2 --> User: 200 OK (Page<ProductSearch>)
+C2 --> 사용자: 200 OK (Page<ProductSearch>)
 deactivate C2
 
 @enduml
