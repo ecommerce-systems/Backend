@@ -14,6 +14,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+
 @RestController
 @RequestMapping("/api/v1/products")
 @RequiredArgsConstructor
@@ -36,6 +40,18 @@ public class ProductControllerV1 {
     public ResponseEntity<List<String>> searchProductNames(@RequestParam("keyword") String keyword) {
         // V1 (Legacy) search also updated to return only names for consistency
         return ResponseEntity.ok(productService.searchNamesV1(keyword));
+    }
+
+    @GetMapping("/search/results")
+    public ResponseEntity<Page<Product>> searchProductResults(
+            @RequestParam("keyword") String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "productId") String sort) {
+
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(sort));
+        Page<Product> results = productService.searchResultsV1(keyword, pageable);
+        return ResponseEntity.ok(results);
     }
 
     @PostMapping

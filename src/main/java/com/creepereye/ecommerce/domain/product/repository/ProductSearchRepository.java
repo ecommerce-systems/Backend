@@ -33,4 +33,6 @@ public interface ProductSearchRepository extends JpaRepository<ProductSearch, In
             @Param("department") String department,
             @Param("productGroup") String productGroup,
             @Param("section") String section);
+
+    org.springframework.data.domain.Page<ProductSearch> findByProdNameContainingIgnoreCase(String keyword, org.springframework.data.domain.Pageable pageable);
 }

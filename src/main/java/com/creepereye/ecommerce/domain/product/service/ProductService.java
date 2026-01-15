@@ -556,6 +556,14 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
+    public Page<Product> searchResultsV1(String keyword, PageRequest pageable) {
+        return productRepository.findByProdNameContainingIgnoreCase(keyword, pageable);
+    }
+
+    public Page<ProductSearch> searchResults(String keyword, PageRequest pageable) {
+        return productSearchRepository.findByProdNameContainingIgnoreCase(keyword, pageable);
+    }
+
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void syncAllProductData() {

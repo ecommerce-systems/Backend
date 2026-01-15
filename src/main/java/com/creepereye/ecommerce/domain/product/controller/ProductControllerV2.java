@@ -8,6 +8,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+
 @RestController
 @RequestMapping("/api/v2/products")
 @RequiredArgsConstructor
@@ -33,5 +37,17 @@ public class ProductControllerV2 {
         // Use the multi-filter search method
         List<String> productNames = productService.searchNamesV2WithFilters(keyword, productType, department, productGroup, section);
         return ResponseEntity.ok(productNames);
+    }
+
+    @GetMapping("/search/results")
+    public ResponseEntity<Page<ProductSearch>> searchProductResults(
+            @RequestParam("keyword") String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sort) {
+        
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(sort));
+        Page<ProductSearch> results = productService.searchResults(keyword, pageable);
+        return ResponseEntity.ok(results);
     }
 }

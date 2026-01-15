@@ -65,7 +65,22 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("updateProduct should update fields and categories")
+    @DisplayName("searchResultsV1 should return paginated results")
+    void searchResultsV1_shouldReturnPage() {
+        String keyword = "test";
+        org.springframework.data.domain.PageRequest pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+        org.springframework.data.domain.Page<Product> page = org.mockito.Mockito.mock(org.springframework.data.domain.Page.class);
+
+        when(productRepository.findByProdNameContainingIgnoreCase(keyword, pageable)).thenReturn(page);
+
+        org.springframework.data.domain.Page<Product> result = productService.searchResultsV1(keyword, pageable);
+
+        assertThat(result).isNotNull();
+        verify(productRepository).findByProdNameContainingIgnoreCase(keyword, pageable);
+    }
+
+    @Test
+    @DisplayName("searchResults should return paginated results")
     void updateProduct_shouldUpdateProduct() {
         int productId = 1;
         ProductUpdateRequestDto dto = new ProductUpdateRequestDto();

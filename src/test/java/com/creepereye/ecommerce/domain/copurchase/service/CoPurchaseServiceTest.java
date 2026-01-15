@@ -25,6 +25,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.creepereye.ecommerce.domain.copurchase.dto.CoPurchaseResponseV1;
+import com.creepereye.ecommerce.domain.product.entity.ProductSearch;
+import com.creepereye.ecommerce.domain.product.repository.ProductSearchRepository;
+
 @ExtendWith(MockitoExtension.class)
 class CoPurchaseServiceTest {
 
@@ -34,13 +38,15 @@ class CoPurchaseServiceTest {
     private OrderRepository orderRepository;
     @Mock
     private ProductRepository productRepository;
+    @Mock
+    private ProductSearchRepository productSearchRepository;
 
     @InjectMocks
     private CoPurchaseService coPurchaseService;
 
     @Test
-    @DisplayName("getRecommendations should return list of CoPurchaseResponse")
-    void getRecommendations_shouldReturnResponseList() {
+    @DisplayName("getRecommendationsV1 should return list of IDs")
+    void getRecommendationsV1_shouldReturnIds() {
         int productId = 1;
         Product targetProduct = Product.builder().productId(2).prodName("Target").build();
         CoPurchase coPurchase = CoPurchase.builder()
@@ -52,11 +58,33 @@ class CoPurchaseServiceTest {
         when(coPurchaseRepository.findBySourceProductProductIdOrderByScoreDesc(productId))
                 .thenReturn(Collections.singletonList(coPurchase));
 
-        List<CoPurchaseResponse> result = coPurchaseService.getRecommendations(productId);
+        List<CoPurchaseResponseV1> result = coPurchaseService.getRecommendationsV1(productId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getProductId()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("getRecommendationsV2 should return list of ProductSearch details")
+    void getRecommendationsV2_shouldReturnDetails() {
+        int productId = 1;
+        Product targetProduct = Product.builder().productId(2).prodName("Target").build();
+        CoPurchase coPurchase = CoPurchase.builder()
+                .sourceProduct(Product.builder().productId(productId).build())
+                .targetProduct(targetProduct)
+                .score(10.0f)
+                .build();
+        
+        ProductSearch productSearch = ProductSearch.builder().productId(2).prodName("Target").build();
+
+        when(coPurchaseRepository.findBySourceProductProductIdOrderByScoreDesc(productId))
+                .thenReturn(Collections.singletonList(coPurchase));
+        when(productSearchRepository.findAllById(anyList())).thenReturn(Collections.singletonList(productSearch));
+
+        List<ProductSearch> result = coPurchaseService.getRecommendationsV2(productId);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getProdName()).isEqualTo("Target");
-        verify(coPurchaseRepository).findBySourceProductProductIdOrderByScoreDesc(productId);
     }
 
     @Test

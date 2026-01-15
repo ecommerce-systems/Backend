@@ -12,17 +12,26 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import com.creepereye.ecommerce.domain.copurchase.dto.CoPurchaseResponseV1;
+import com.creepereye.ecommerce.domain.product.entity.ProductSearch;
+
 @RestController
-@RequestMapping("/api/v1/co-purchase")
 @RequiredArgsConstructor
 public class CoPurchaseController {
 
     private final CoPurchaseService coPurchaseService;
 
-    @GetMapping("/{productId}")
+    // V1: Returns only IDs (simulating need for 2nd request)
+    @GetMapping("/api/v1/co-purchase/{productId}")
     @PreAuthorize("isAuthenticated()")
-    public List<CoPurchaseResponse> getRecommendations(@PathVariable Integer productId) {
-        return coPurchaseService.getRecommendations(productId);
+    public List<CoPurchaseResponseV1> getRecommendationsV1(@PathVariable Integer productId) {
+        return coPurchaseService.getRecommendationsV1(productId);
     }
 
+    // V2: Returns full metadata (denormalized)
+    @GetMapping("/api/v2/co-purchase/{productId}")
+    @PreAuthorize("isAuthenticated()")
+    public List<ProductSearch> getRecommendationsV2(@PathVariable Integer productId) {
+        return coPurchaseService.getRecommendationsV2(productId);
+    }
 }

@@ -131,6 +131,13 @@ export default function () {
             'search results are an array': (r) => r.json() && Array.isArray(r.json()),
         });
 
+        const paginatedSearchRes = http.get(`${PRODUCT_READ_URL}/search/results?keyword=Trousers&page=0&size=10`, { headers: userAuthHeaders });
+        check(paginatedSearchRes, {
+            [`user can get paginated results (${VERSION})`]: (r) => r.status === 200,
+            'has content': (r) => r.json('content') && Array.isArray(r.json('content')),
+            'has totalElements': (r) => r.json('totalElements') !== undefined
+        });
+
         if (VERSION === 'v2') {
             const productGroup = encodeURIComponent('Garment Lower body');
             const params = `keyword=Trousers&department=Men&productGroup=${productGroup}`;
