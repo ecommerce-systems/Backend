@@ -52,15 +52,15 @@
 -   **헤더**: `Authorization: Bearer <accessToken>`
 -   **성공 응답**: `200 OK` (`OrderResponse` 리스트)
     ```json
-    [
-      {
-        "orderId": 101,
-        "orderDate": "2023-10-27T10:00:00",
-        "status": "PENDING",
-        "orderDetails": [...]
-      }
-    ]
-    ```
+[
+  {
+    "orderId": 101,
+    "orderDate": "2023-10-27T10:00:00",
+    "status": "PENDING",
+    "orderDetails": ["..."]
+  }
+]
+```
 
 ### 3.3. 주문 상세 조회
 -   **URL**: `/{orderId}`

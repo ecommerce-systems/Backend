@@ -44,7 +44,7 @@ public class AuthControllerV2 {
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", tokenResponse.getRefreshToken())
                 .httpOnly(true)
                 .secure(true)
-                .sameSite("Lax")
+                .sameSite("None")
                 .path("/api/v2/auth/refresh")
                 .maxAge(refreshTokenValidityInSeconds)
                 .build();

@@ -53,10 +53,10 @@
 -   **HTTP Method**: `POST`
 -   **권한**: `ADMIN`
 -   **설명**: 새로운 상품을 등록함.
--   **요청 본문 (`ProductCreateRequestDto`)**:
-    ```json
-    { "prodName": "새 상품", "price": 99000, ... }
-    ```
+- **요청 본문 (`ProductCreateRequestDto`)**:
+  ```json
+  { "prodName": "새 상품", "price": 99000, "..." }
+  ```
 -   **응답**: `201 Created`
 
 ### 3.6. 상품 수정 (관리자)
