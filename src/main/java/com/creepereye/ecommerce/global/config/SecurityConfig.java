@@ -49,15 +49,32 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/h2-console/**").permitAll()
+
+
                         .requestMatchers("/actuator/prometheus/**").permitAll()
+
+
                         .requestMatchers("/api/v1/auth/login", "/api/v2/auth/login").permitAll()
                         .requestMatchers("/api/v1/auth/signup", "/api/v2/auth/signup").permitAll()
-                        .requestMatchers("/api/v1/auth/signup-admin", "/api/v2/auth/signup-admin").permitAll()
+
                         .requestMatchers("/api/v1/auth/logout", "/api/v2/auth/logout").authenticated()
-                        .requestMatchers("/api/v1/orders/**").authenticated()
                         .requestMatchers("/api/v1/auth/refresh", "/api/v2/auth/refresh").permitAll()
+
+
+                        .requestMatchers("/api/v1/orders/**").authenticated()
+
                         .requestMatchers("/api/v1/products/**","/api/v2/products/**").permitAll()
+
+                        .requestMatchers("/api/v2/co-purchase/**","/api/v1/co-purchase/**").permitAll()
+
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
+
+
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)
