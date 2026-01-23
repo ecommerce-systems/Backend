@@ -1,11 +1,9 @@
 package com.creepereye.ecommerce.domain.auth.controller;
 
-import com.creepereye.ecommerce.domain.auth.dto.LoginRequest;
-import com.creepereye.ecommerce.domain.auth.dto.PasswordChangeRequest;
-import com.creepereye.ecommerce.domain.auth.dto.SignUpRequest;
-import com.creepereye.ecommerce.domain.auth.dto.TokenResponse;
+import com.creepereye.ecommerce.domain.auth.dto.*;
 import com.creepereye.ecommerce.domain.auth.service.AuthServiceV2;
 import com.creepereye.ecommerce.domain.user.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -44,7 +42,7 @@ public class AuthControllerV2 {
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", tokenResponse.getRefreshToken())
                 .httpOnly(true)
                 .secure(true)
-                .sameSite("None")
+                .sameSite("Lax")
                 .path("/api/v2/auth/refresh")
                 .maxAge(refreshTokenValidityInSeconds)
                 .build();
@@ -62,10 +60,25 @@ public class AuthControllerV2 {
         return ResponseEntity.ok().build();
     }
 
+
+
+
     @PostMapping("/refresh")
     public ResponseEntity<TokenResponse> refresh(@CookieValue("refreshToken") String refreshToken) {
+
         TokenResponse tokenResponse = authService.refresh(refreshToken);
-        return ResponseEntity.ok(tokenResponse);
+
+
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", tokenResponse.getRefreshToken())
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Lax")
+                .maxAge(refreshTokenValidityInSeconds)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .body(tokenResponse);
     }
 
     @PostMapping("/password")
