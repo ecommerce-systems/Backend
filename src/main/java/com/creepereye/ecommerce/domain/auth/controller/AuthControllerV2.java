@@ -74,6 +74,7 @@ public class AuthControllerV2 {
                 .httpOnly(true)
                 .secure(true)
                 .sameSite("Lax")
+                .path("/api/v2/auth")
                 .maxAge(0)
                 .build();
 
