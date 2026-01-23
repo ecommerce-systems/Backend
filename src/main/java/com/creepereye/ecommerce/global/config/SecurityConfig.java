@@ -68,10 +68,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/v2/co-purchase/**","/api/v1/co-purchase/**").permitAll()
 
                         .requestMatchers(
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/swagger-resources/**",
-                                "/webjars/**"
+                                "/api/swagger-ui/**",
+                                "/api/v3/api-docs/**",
+                                "/api/swagger-resources/**",
+                                "/api/webjars/**"
                         ).permitAll()
 
 
