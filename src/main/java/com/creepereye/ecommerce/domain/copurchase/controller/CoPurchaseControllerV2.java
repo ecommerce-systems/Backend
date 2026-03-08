@@ -19,7 +19,6 @@ public class CoPurchaseControllerV2 {
     private final CoPurchaseService coPurchaseService;
 
     @GetMapping("/{productId}")
-    @PreAuthorize("isAuthenticated()")
     public List<ProductSearch> getRecommendations(@PathVariable Integer productId) {
         return coPurchaseService.getRecommendationsV2(productId);
     }
