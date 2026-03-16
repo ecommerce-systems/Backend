@@ -3,22 +3,14 @@ import { check, sleep } from 'k6';
 import { Trend } from 'k6/metrics';
 
 const searchTrendV1 = new Trend('search_duration_v1');
-const searchTrendV2 = new Trend('search_duration_v2');
 
 export let options = {
     scenarios: {
         v1_product: {
             executor: 'constant-vus',
             exec: 'testProductV1',
-            vus: 50,
+            vus: 200,
             duration: '20s',
-        },
-        v2_product: {
-            executor: 'constant-vus',
-            exec: 'testProductV2',
-            vus: 50,
-            duration: '20s',
-            startTime: '22s',
         },
     },
 };
@@ -105,23 +97,7 @@ function runProductFlow(version) {
             'search results array': (r) => r.json() && Array.isArray(r.json())
         });
 
-        if (version === 'v1') {
-            searchTrendV1.add(searchEndTime - searchStartTime);
-        } else {
-            searchTrendV2.add(searchEndTime - searchStartTime);
-        }
-
-        if (version === 'v2') {
-            const productGroup = encodeURIComponent('Garment Lower body');
-            const params = `keyword=${randomKeyword}&department=Men&productGroup=${productGroup}`;
-            
-            const filterStartTime = new Date();
-            const filterRes = http.get(`${productReadUrl}/search?${params}`, { headers: userAuthHeaders });
-            const filterEndTime = new Date();
-            
-            check(filterRes, { 'v2 filtered search ok': (r) => r.status === 200 });
-            searchTrendV2.add(filterEndTime - filterStartTime); 
-        }
+        searchTrendV1.add(searchEndTime - searchStartTime);
     }
 
     sleep(1);
@@ -133,8 +109,4 @@ function runProductFlow(version) {
 
 export function testProductV1() {
     runProductFlow('v1');
-}
-
-export function testProductV2() {
-    runProductFlow('v2');
 }

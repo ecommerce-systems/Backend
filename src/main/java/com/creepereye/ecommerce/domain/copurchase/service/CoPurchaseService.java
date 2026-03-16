@@ -1,8 +1,8 @@
 package com.creepereye.ecommerce.domain.copurchase.service;
 
 import com.creepereye.ecommerce.domain.copurchase.dto.CoPurchaseCreateRequest;
-import com.creepereye.ecommerce.domain.copurchase.dto.CoPurchaseResponseV2;
 import com.creepereye.ecommerce.domain.copurchase.dto.CoPurchaseResponseV1;
+import com.creepereye.ecommerce.domain.copurchase.dto.CoPurchaseResponseV2;
 import com.creepereye.ecommerce.domain.copurchase.entity.CoPurchase;
 import com.creepereye.ecommerce.domain.copurchase.repository.CoPurchaseRepository;
 import com.creepereye.ecommerce.domain.order.entity.Order;
@@ -13,8 +13,10 @@ import com.creepereye.ecommerce.domain.product.entity.ProductSearch;
 import com.creepereye.ecommerce.domain.product.repository.ProductRepository;
 import com.creepereye.ecommerce.domain.product.repository.ProductSearchRepository;
 import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.Cacheable;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,48 +24,101 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
-@RequiredArgsConstructor
 public class CoPurchaseService {
 
     private final CoPurchaseRepository coPurchaseRepository;
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final ProductSearchRepository productSearchRepository;
+    private final CacheManager cacheManager;
 
-    @Cacheable(value = "recommendations_v1", key = "#productId")
-    @Transactional(readOnly = true)
-    public List<CoPurchaseResponseV1> getRecommendationsV1(Integer productId) {
-        List<CoPurchase> coPurchases = coPurchaseRepository.findBySourceProductProductIdOrderByScoreDesc(productId);
-
-        return coPurchases.stream()
-                .map(coPurchase -> new CoPurchaseResponseV1(coPurchase.getTargetProduct().getProductId()))
-                .collect(Collectors.toList());
+    @Autowired
+    public CoPurchaseService(CoPurchaseRepository coPurchaseRepository,
+                             OrderRepository orderRepository,
+                             ProductRepository productRepository,
+                             ProductSearchRepository productSearchRepository,
+                             @Autowired(required = false) CacheManager cacheManager) {
+        this.coPurchaseRepository = coPurchaseRepository;
+        this.orderRepository = orderRepository;
+        this.productRepository = productRepository;
+        this.productSearchRepository = productSearchRepository;
+        this.cacheManager = cacheManager;
     }
 
-    @Cacheable(value = "recommendations_v2", key = "#productId")
+    @Transactional(readOnly = true)
+    public List<CoPurchaseResponseV1> getRecommendationsV1(Integer productId) {
+        return getWithCacheFallback("recommendations_v1", productId, () -> {
+            List<CoPurchase> coPurchases = coPurchaseRepository.findBySourceProductProductIdOrderByScoreDesc(productId);
+
+            return coPurchases.stream()
+                    .map(coPurchase -> new CoPurchaseResponseV1(coPurchase.getTargetProduct().getProductId()))
+                    .collect(Collectors.toList());
+        });
+    }
+
     @Transactional(readOnly = true)
     public List<ProductSearch> getRecommendationsV2(Integer productId) {
-        List<CoPurchase> coPurchases = coPurchaseRepository.findBySourceProductProductIdOrderByScoreDesc(productId);
-        
-        List<Integer> targetProductIds = coPurchases.stream()
-                .map(cp -> cp.getTargetProduct().getProductId())
-                .collect(Collectors.toList());
+        return getWithCacheFallback("recommendations_v2", productId, () -> {
+            List<CoPurchase> coPurchases = coPurchaseRepository.findBySourceProductProductIdOrderByScoreDesc(productId);
 
-        return productSearchRepository.findAllById(targetProductIds);
+            List<Integer> targetProductIds = coPurchases.stream()
+                    .map(cp -> cp.getTargetProduct().getProductId())
+                    .collect(Collectors.toList());
+
+            return productSearchRepository.findAllById(targetProductIds);
+        });
     }
 
     @Deprecated
-    @Cacheable(value = "recommendations", key = "#productId")
     @Transactional(readOnly = true)
     public List<CoPurchaseResponseV2> getRecommendations(Integer productId) {
-        List<CoPurchase> coPurchases = coPurchaseRepository.findBySourceProductProductIdOrderByScoreDesc(productId);
+        return getWithCacheFallback("recommendations", productId, () -> {
+            List<CoPurchase> coPurchases = coPurchaseRepository.findBySourceProductProductIdOrderByScoreDesc(productId);
 
-        return coPurchases.stream()
-                .map(coPurchase -> new CoPurchaseResponseV2(coPurchase.getTargetProduct()))
-                .collect(Collectors.toList());
+            return coPurchases.stream()
+                    .map(coPurchase -> new CoPurchaseResponseV2(coPurchase.getTargetProduct()))
+                    .collect(Collectors.toList());
+        });
+    }
+
+    /**
+     * 캐시 조회 시 Redis 장애가 발생하면 DB에서 데이터를 조회하는 Fallback 로직
+     */
+    @SuppressWarnings("unchecked")
+    private <T> T getWithCacheFallback(String cacheName, Object key, Supplier<T> dbFetcher) {
+        if (cacheManager != null) {
+            try {
+                Cache cache = cacheManager.getCache(cacheName);
+                if (cache != null) {
+                    Cache.ValueWrapper valueWrapper = cache.get(key);
+                    if (valueWrapper != null) {
+                        return (T) valueWrapper.get();
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Redis connection failure for cache [{}]. Falling back to DB. Error: {}", cacheName, e.getMessage());
+            }
+        }
+
+        T result = dbFetcher.get();
+
+        if (cacheManager != null && result != null) {
+            try {
+                Cache cache = cacheManager.getCache(cacheName);
+                if (cache != null) {
+                    cache.put(key, result);
+                }
+            } catch (Exception e) {
+                log.error("Redis connection failure while putting into cache [{}]. Error: {}", cacheName, e.getMessage());
+            }
+        }
+
+        return result;
     }
 
     @Transactional

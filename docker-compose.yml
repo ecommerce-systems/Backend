@@ -50,6 +50,7 @@ services:
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"
     volumes:
       - ./grafana/provisioning/:/etc/grafana/provisioning/
+      - grafana_data:/var/lib/grafana
     deploy:
       replicas: 1
       restart_policy:
@@ -96,6 +97,7 @@ services:
 
 volumes:
   postgres_data:
+  grafana_data:
 
 networks:
   ecommerce:

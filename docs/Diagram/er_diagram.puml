@@ -8,7 +8,7 @@ entity "Auth (인증)" as auth {
   --
   *username : String <<Unique>>
   *password : String
-  role : List<String>
+  roles : List<String>
 }
 
 entity "RefreshToken (리프레시 토큰)" as refresh_token {
@@ -103,37 +103,59 @@ entity "CoPurchase (함께 구매한 상품)" as co_purchase {
 }
 
 entity "ProductType" as pt {
-    *product_type_no: PK
+    *product_type_no: Integer <<PK>>
+    --
+    product_type_name: String
 }
 entity "ProductGroup" as pg {
-    *product_group_code: PK
+    *product_group_code: Character <<PK>>
+    --
+    product_group_name: String
 }
 entity "ColourGroup" as cg {
-    *colour_group_code: PK
+    *colour_group_code: Integer <<PK>>
+    --
+    colour_group_name: String
 }
 entity "Department" as dept {
-    *department_no: PK
+    *department_no: Integer <<PK>>
+    --
+    department_name: String
 }
 entity "GarmentGroup" as gg {
-    *garment_group_no: PK
+    *garment_group_no: Integer <<PK>>
+    --
+    garment_group_name: String
 }
 entity "GraphicalAppearance" as ga {
-    *graphical_appearance_no: PK
+    *graphical_appearance_no: Integer <<PK>>
+    --
+    graphical_appearance_name: String
 }
 entity "Index" as idx {
-    *index_code: PK
+    *index_code: Character <<PK>>
+    --
+    index_name: String
 }
 entity "IndexGroup" as ig {
-    *index_group_no: PK
+    *index_group_no: Integer <<PK>>
+    --
+    index_group_name: String
 }
 entity "PerceivedColourMaster" as pcm {
-    *perceived_colour_master_id: PK
+    *perceived_colour_master_id: Integer <<PK>>
+    --
+    perceived_colour_master_name: String
 }
 entity "PerceivedColourValue" as pcv {
-    *perceived_colour_value_id: PK
+    *perceived_colour_value_id: Integer <<PK>>
+    --
+    perceived_colour_value_name: String
 }
 entity "Section" as sec {
-    *section_no: PK
+    *section_no: Integer <<PK>>
+    --
+    section_name: String
 }
 
 ' Relationships

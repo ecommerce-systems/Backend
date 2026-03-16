@@ -4,23 +4,14 @@ import { Trend } from 'k6/metrics';
 
 const v1MissTrend = new Trend('copurchase_v1_miss_duration');
 const v1HitTrend = new Trend('copurchase_v1_hit_duration');
-const v2MissTrend = new Trend('copurchase_v2_miss_duration');
-const v2HitTrend = new Trend('copurchase_v2_hit_duration');
 
 export let options = {
     scenarios: {
         v1_copurchase: {
             executor: 'constant-vus',
             exec: 'testCoPurchaseV1',
-            vus: 5,
-            duration: '45s',
-        },
-        v2_copurchase: {
-            executor: 'constant-vus',
-            exec: 'testCoPurchaseV2',
-            vus: 5,
-            duration: '45s',
-            startTime: '47s',
+            vus: 200,
+            duration: '20s',
         },
     },
 };
@@ -122,32 +113,5 @@ export function testCoPurchaseV1() {
         }
         const endTime = new Date();
         v1HitTrend.add(endTime - startTime);
-    });
-}
-
-// V2 Test Execution
-export function testCoPurchaseV2() {
-    const setupData = setupAndExecute();
-    if (!setupData) return;
-
-    const { userToken, product1Id } = setupData;
-    const userHeaders = { 'Authorization': `Bearer ${userToken}` };
-
-    // V2 - Cache Miss
-    group('V2 - Cache Miss', () => {
-        const startTime = new Date();
-        http.get(`${BASE_URL}/v2/co-purchase/${product1Id}`, { headers: userHeaders });
-        const endTime = new Date();
-        v2MissTrend.add(endTime - startTime);
-    });
-
-    sleep(0.5);
-
-    // V2 - Cache Hit
-    group('V2 - Cache Hit', () => {
-        const startTime = new Date();
-        http.get(`${BASE_URL}/v2/co-purchase/${product1Id}`, { headers: userHeaders });
-        const endTime = new Date();
-        v2HitTrend.add(endTime - startTime);
     });
 }
