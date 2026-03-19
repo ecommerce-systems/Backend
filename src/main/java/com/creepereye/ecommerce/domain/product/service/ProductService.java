@@ -88,7 +88,7 @@ public class ProductService {
                     log.error("Product not found with id: {}", id);
                     return new IllegalArgumentException("Product not found with id: " + id);
                 });
-        log.debug("🔍 Found existing product: {}", existingProduct);
+        log.debug("Found existing product: {}", existingProduct);
 
         existingProduct.setProductCode(dto.getProductCode());
         existingProduct.setProdName(dto.getProdName());
