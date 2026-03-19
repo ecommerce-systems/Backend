@@ -21,7 +21,7 @@ public class ProductControllerV2 {
 
     @GetMapping("/{id}")
     public ResponseEntity<ProductSearch> getProductById(@PathVariable Integer id) {
-        // V2: Returns the denormalized entity directly (Fast, No Joins)
+        
         return productService.findByIdV2(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -34,7 +34,7 @@ public class ProductControllerV2 {
                                                            @RequestParam(value = "productGroup", required = false) String productGroup,
                                                            @RequestParam(value = "section", required = false) String section) {
         
-        // Use the multi-filter search method
+        
         List<String> productNames = productService.searchNamesV2WithFilters(keyword, productType, department, productGroup, section);
         return ResponseEntity.ok(productNames);
     }
