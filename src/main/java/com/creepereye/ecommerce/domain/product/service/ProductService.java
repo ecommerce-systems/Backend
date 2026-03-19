@@ -82,10 +82,10 @@ public class ProductService {
 
     @Transactional
     public Product updateProduct(Integer id, ProductUpdateRequestDto dto) {
-        log.info("🔄 Attempting to update product with ID: {} and DTO: {}", id, dto);
+        log.info("Attempting to update product with ID: {} and DTO: {}", id, dto);
         Product existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> {
-                    log.error("❌ Product not found with id: {}", id);
+                    log.error("Product not found with id: {}", id);
                     return new IllegalArgumentException("Product not found with id: " + id);
                 });
         log.debug("🔍 Found existing product: {}", existingProduct);
@@ -107,13 +107,13 @@ public class ProductService {
         existingProduct.setSection(resolveSection(new Section(null, dto.getSectionName())));
         existingProduct.setGarmentGroup(resolveGarmentGroup(new GarmentGroup(null, dto.getGarmentGroupName())));
 
-        log.debug("💾 Saving updated product for ID: {}", id);
+        log.debug("Saving updated product for ID: {}", id);
         Product updatedProduct = productRepository.save(existingProduct);
         
-        // V2 Sync
+        
         syncToSearch(updatedProduct);
         
-        log.info("✅ Product updated and saved: {}", updatedProduct);
+        log.info("Product updated and saved: {}", updatedProduct);
         return updatedProduct;
     }
 
@@ -161,8 +161,7 @@ public class ProductService {
             log.debug("Synced product id {} to ProductSearch (V2)", product.getProductId());
         } catch (Exception e) {
             log.error("Failed to sync product to search entity", e);
-            // Non-blocking error for V1 flow? Or strictly transactional?
-            // Ideally strictly transactional, but for now we log.
+            
         }
     }
 
@@ -219,7 +218,7 @@ public class ProductService {
                         log.info("Created and saved new ProductGroup: {}", savedProductGroup);
                         return savedProductGroup;
                     } catch (org.springframework.dao.DataIntegrityViolationException e) {
-                        // Concurrent insertion happened, try to find it again
+                        
                         log.warn("Concurrent insertion of ProductGroup '{}' detected. Retrying to find existing entity.", entity.getProductGroupName());
                         return productGroupRepository.findByProductGroupName(entity.getProductGroupName())
                                 .orElseThrow(() -> new IllegalStateException("Failed to find ProductGroup after concurrent insertion: " + entity.getProductGroupName(), e));
@@ -504,17 +503,14 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
-    // V2 Search Methods
+    
     public Optional<ProductSearch> findByIdV2(Integer id) {
-        // Retrieves directly from the denormalized table (No Joins)
+       
         return productSearchRepository.findById(id);
     }
 
     public List<ProductSearch> searchV2(String keyword) {
-        // Use the index-friendly prefix search first, or fallback to containing
-        // For demonstration, let's assume we want "Containing" but on the denormalized table
-        // Note: Standard B-Tree index on 'prodName' optimizes 'Starts With' (prefix), not 'Containing' (infix).
-        // However, avoiding joins makes this faster regardless.
+        
         return productSearchRepository.findTop20ByProdNameContainingIgnoreCase(keyword);
     }
 
@@ -525,16 +521,16 @@ public class ProductService {
     }
 
     public List<String> searchNamesV2(String keyword) {
-        // 1. Try Fast Prefix Search First ("Item%")
+        
         List<String> results = productSearchRepository.findTop20ByProdNameStartingWithIgnoreCase(keyword).stream()
                 .map(ProductSearch::getProdName)
                 .collect(Collectors.toList());
 
-        // 2. If results are insufficient (e.g., < 5), fallback/append Contains Search ("%Item%")
+        
         if (results.size() < 5) {
             List<String> fallbackResults = productSearchRepository.findTop20ByProdNameContainingIgnoreCase(keyword).stream()
                     .map(ProductSearch::getProdName)
-                    .filter(name -> !results.contains(name)) // Avoid duplicates
+                    .filter(name -> !results.contains(name))
                     .collect(Collectors.toList());
             
             results.addAll(fallbackResults);
@@ -546,7 +542,7 @@ public class ProductService {
     public List<String> searchNamesV2WithCategory(String keyword, String productTypeName) {
         return productSearchRepository.findByProductTypeNameAndProdNameContainingIgnoreCase(productTypeName, keyword).stream()
                 .map(ProductSearch::getProdName)
-                .limit(20) // Limit consistency
+                .limit(20) 
                 .collect(Collectors.toList());
     }
 
@@ -569,16 +565,16 @@ public class ProductService {
     @Transactional
     public void syncAllProductData() {
         if (productSearchRepository.count() == 0) {
-            log.info("🚀 Starting initial data migration for ProductSearch (V2)...");
+            log.info("Starting initial data migration for ProductSearch (V2)...");
             List<Product> allProducts = productRepository.findAll();
             int count = 0;
             for (Product product : allProducts) {
                 syncToSearch(product);
                 count++;
             }
-            log.info("✅ Migration complete. Synced {} products to ProductSearch.", count);
+            log.info("Migration complete. Synced {} products to ProductSearch.", count);
         } else {
-            log.info("👌 ProductSearch data already exists. Skipping migration.");
+            log.info("ProductSearch data already exists. Skipping migration.");
         }
     }
 }
