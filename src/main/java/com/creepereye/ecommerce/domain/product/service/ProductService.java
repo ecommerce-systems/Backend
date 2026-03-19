@@ -186,7 +186,7 @@ public class ProductService {
                         log.info("Created and saved new ProductType: {}", savedProductType);
                         return savedProductType;
                     } catch (org.springframework.dao.DataIntegrityViolationException e) {
-                        // Concurrent insertion happened, try to find it again
+                        
                         log.warn("Concurrent insertion of ProductType '{}' detected. Retrying to find existing entity.", incomingEntity.getProductTypeName());
                         return productTypeRepository.findByProductTypeName(incomingEntity.getProductTypeName())
                                 .orElseThrow(() -> new IllegalStateException("Failed to find ProductType after concurrent insertion: " + incomingEntity.getProductTypeName(), e));
